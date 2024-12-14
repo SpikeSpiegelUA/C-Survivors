@@ -1,5 +1,6 @@
 #include "stdlib.h"
 #include "SDL.h"
+#include "SDL_image.h"
 #include "stdbool.h"
 #undef main
 
@@ -11,7 +12,46 @@ typedef struct {
     char name[31];
 } Man;
 
-bool ProcessEvents(Man* man) {
+typedef struct {
+    int x, y;
+} Star;
+
+typedef struct {
+    //Players
+    Man man;
+
+    //Stars
+    Star stars[100];
+
+    //Hardware
+    SDL_Renderer* renderer;
+
+    //Textures
+    SDL_Texture* star;
+} GameState;
+
+void LoadGame(GameState* gameState) {
+    gameState->man.x = 220;
+    gameState->man.y = 70;
+    SDL_Surface* starSurface = NULL;
+
+    starSurface = IMG_Load("C:\\Visual Studio Projects\\C-Survivors\\Images\\star.png");
+    if (starSurface == NULL) {
+        printf("Image not found!!!\n");
+        SDL_Quit();
+        exit(1);
+    }
+
+    gameState->star = SDL_CreateTextureFromSurface(gameState->renderer, starSurface);
+    SDL_FreeSurface(starSurface);
+
+    for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++){
+        gameState->stars[i].x = rand()%640;
+        gameState->stars[i].y = rand()%480;
+    }
+}
+
+bool ProcessEvents(GameState* gameState) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
@@ -30,55 +70,62 @@ bool ProcessEvents(Man* man) {
 
     const Uint8* state = SDL_GetKeyboardState(NULL);
     if (state[SDL_SCANCODE_RIGHT]) {
-        man->x += 5;
+        gameState->man.x += 5;
     }
     if (state[SDL_SCANCODE_LEFT]) {
-        man->x -= 5;
+        gameState->man.x -= 5;
     }
     if (state[SDL_SCANCODE_UP]) {
-        man->y -= 5;
+        gameState->man.y -= 5;
     }
     if (state[SDL_SCANCODE_DOWN]) {
-        man->y += 5;
+        gameState->man.y += 5;
     }
     return false;
 }
 
-void RenderFrame(SDL_Renderer* Renderer, Man* man){
-    SDL_SetRenderDrawColor(Renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-    SDL_RenderClear(Renderer);
+void RenderFrame(SDL_Renderer* renderer, GameState* gameState){
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+    SDL_RenderClear(renderer);
 
-    SDL_SetRenderDrawColor(Renderer, 0, 0, 255, SDL_ALPHA_OPAQUE);
-    SDL_Rect Rect = { man->x, man->y, 140, 220 };
-    SDL_RenderFillRect(Renderer, &Rect);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 255, SDL_ALPHA_OPAQUE);
+    SDL_Rect manRect = { gameState->man.x, gameState->man.y, 140, 140 };
+    SDL_RenderFillRect(renderer, &manRect);
 
-    SDL_RenderPresent(Renderer);
+    for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++) {
+        SDL_Rect newStar = {gameState->stars[i].x, gameState->stars[i].y, 64, 64};
+        SDL_RenderCopy(renderer, gameState->star, NULL, &newStar);
+    }
+
+    SDL_RenderPresent(renderer);
 }
 
 int main()
 {
-    SDL_Window* Window;
-    SDL_Renderer* Renderer;
+    srand(time(NULL));
+    GameState gameState;
+    SDL_Window* window = NULL;
+    SDL_Renderer* renderer = NULL;
 
     SDL_InitSubSystem(SDL_INIT_VIDEO);
     
-    Window = SDL_CreateWindow("C Survivors", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0);
-    Renderer = SDL_CreateRenderer(Window, -1, SDL_RENDERER_ACCELERATED);
+    window = SDL_CreateWindow("C Survivors", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
+    gameState.renderer = renderer;
+
+    LoadGame(&gameState);
 
     bool done = false;
 
-    Man man;
-    man.x = 220;
-    man.y = 140;
-
     while (!done) {
-        done = ProcessEvents(&man);
-        RenderFrame(Renderer, &man);
-        SDL_Delay(10);
+        done = ProcessEvents(&gameState);
+        RenderFrame(renderer, &gameState);
     }
 
-    SDL_DestroyWindow(Window);
-    SDL_DestroyRenderer(Renderer);
+    SDL_DestroyTexture(gameState.star);
+    SDL_DestroyWindow(window);
+    SDL_DestroyRenderer(renderer);
 
     SDL_Quit();
 
