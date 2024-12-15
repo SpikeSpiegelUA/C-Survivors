@@ -1,16 +1,23 @@
-#include "stdlib.h"
-#include "SDL.h"
-#include "SDL_image.h"
-#include "stdbool.h"
-#undef main
-
 #ifndef CSURVIVORS_H
 #define CSURVIVORS_H
+
+#include <stdlib.h>
+#include <stdbool.h>
+#include "SDL.h"
+#include "SDL_image.h"
+#include <stdio.h>
+#include <time.h>
+#undef main
+
 
 typedef struct {
     int x, y;
     char name[31];
 } Man;
+
+typedef struct {
+    int x, y, w, h;
+} Ledge;
 
 typedef struct {
     int x, y;
@@ -28,15 +35,40 @@ typedef struct {
 
     //Textures
     SDL_Texture* star;
+    SDL_Texture* manFrames[3];
 } GameState;
 
 void LoadGame(GameState* gameState) {
     gameState->man.x = 220;
     gameState->man.y = 70;
     SDL_Surface* starSurface = NULL;
+    SDL_Surface* manIdleSurface = NULL;
+    SDL_Surface* manLeftLegSurface = NULL;
+    SDL_Surface* manRightLegSurface = NULL;
 
-    starSurface = IMG_Load("C:\\Visual Studio Projects\\C-Survivors\\Images\\star.png");
+    starSurface = IMG_Load("..\\Images\\star.png");
     if (starSurface == NULL) {
+        printf("Star image not found!!!\n");
+        SDL_Quit();
+        exit(1);
+    }
+
+    manIdleSurface = IMG_Load("..\\Images\\Player\\Idle.png");
+    if (manIdleSurface == NULL) {
+        printf("Image not found!!!\n");
+        SDL_Quit();
+        exit(1);
+    }
+
+    manLeftLegSurface = IMG_Load("..\\Images\\Player\\LeftLeg.png");
+    if (manLeftLegSurface == NULL) {
+        printf("Image not found!!!\n");
+        SDL_Quit();
+        exit(1);
+    }
+
+    manRightLegSurface = IMG_Load("..\\Images\\Player\\RightLeg.png");
+    if (manRightLegSurface == NULL) {
         printf("Image not found!!!\n");
         SDL_Quit();
         exit(1);
@@ -44,6 +76,12 @@ void LoadGame(GameState* gameState) {
 
     gameState->star = SDL_CreateTextureFromSurface(gameState->renderer, starSurface);
     SDL_FreeSurface(starSurface);
+    gameState->manFrames[0] = SDL_CreateTextureFromSurface(gameState->renderer, manIdleSurface);
+    SDL_FreeSurface(manIdleSurface);
+    gameState->manFrames[1] = SDL_CreateTextureFromSurface(gameState->renderer, manLeftLegSurface);
+    SDL_FreeSurface(manLeftLegSurface);
+    gameState->manFrames[2] = SDL_CreateTextureFromSurface(gameState->renderer, manRightLegSurface);
+    SDL_FreeSurface(manRightLegSurface);
 
     for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++){
         gameState->stars[i].x = rand()%640;
@@ -88,9 +126,10 @@ void RenderFrame(SDL_Renderer* renderer, GameState* gameState){
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 255, SDL_ALPHA_OPAQUE);
-    SDL_Rect manRect = { gameState->man.x, gameState->man.y, 140, 140 };
-    SDL_RenderFillRect(renderer, &manRect);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+
+    SDL_Rect manRect = { gameState->man.x, gameState->man.y, 64, 64 };
+    SDL_RenderCopyEx(renderer, gameState->manFrames[0], NULL, &manRect, 0, NULL, 0);
 
     for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++) {
         SDL_Rect newStar = {gameState->stars[i].x, gameState->stars[i].y, 64, 64};
@@ -102,7 +141,7 @@ void RenderFrame(SDL_Renderer* renderer, GameState* gameState){
 
 int main()
 {
-    srand(time(NULL));
+    srand((unsigned int)(time(NULL)));
     GameState gameState;
     SDL_Window* window = NULL;
     SDL_Renderer* renderer = NULL;
