@@ -18,5 +18,8 @@
     <ClCompile Include="C Survivors.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ArrayFunctions.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
