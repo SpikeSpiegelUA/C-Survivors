@@ -1,0 +1,6 @@
+#ifndef GLOBALVARIABLES_H
+#define GLOBALVARIABLES_H
+
+#define GRAVITY 0.35f
+
+#endif

@@ -71,8 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Program Files\Microsoft Visual Studio\2022\Community\SDL2\include;C:\Program Files\Microsoft Visual Studio\2022\Community\SDL2\SDL2_Image\include;D:\Visual Studio\SDL2\include;D:\Visual Studio\SDL2_Image\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files\Microsoft Visual Studio\2022\Community\SDL2\SDL2_Image\lib\x64;C:\Program Files\Microsoft Visual Studio\2022\Community\SDL2\lib\x64;D:\Visual Studio\SDL2\lib\x64;D:\Visual Studio\SDL2_Image\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files\Microsoft Visual Studio\2022\Community\SDL2\include;C:\Program Files\Microsoft Visual Studio\2022\Community\SDL2\SDL2_Image\include;D:\Visual Studio\SDL2\include;D:\Visual Studio\SDL2_Image\include;D:\Visual Studio\SDL2_ttf\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files\Microsoft Visual Studio\2022\Community\SDL2\SDL2_Image\lib\x64;C:\Program Files\Microsoft Visual Studio\2022\Community\SDL2\lib\x64;D:\Visual Studio\SDL2\lib\x64;D:\Visual Studio\SDL2_Image\lib\x64;D:\Visual Studio\SDL2_ttf\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -113,7 +113,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>sdl2.lib;legacy_stdio_definitions.lib;sdl2main.lib;sdl2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>sdl2.lib;legacy_stdio_definitions.lib;sdl2main.lib;sdl2_image.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
     </Link>
   </ItemDefinitionGroup>
@@ -134,8 +134,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ArrayFunctions.c" />
-    <ClCompile Include="C Survivors.c" />
+    <ClInclude Include="ArrayFunctions.h">
+      <FileType>CppCode</FileType>
+    </ClInclude>
+    <ClCompile Include="CSurvivors.c" />
+    <ClInclude Include="CSurvivors.h" />
+    <ClInclude Include="GlobalVariables.h" />
+    <ClCompile Include="Status.c" />
+    <ClInclude Include="Status.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
