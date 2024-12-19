@@ -15,11 +15,16 @@
 #define STATUS_STATE_GAME 1
 #define STATUS_STATE_GAMEOVER 2
 
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 480
+
 typedef struct {
     float x, y;
+    float w, h;
     float dx, dy;
     char name[31];
-    bool onLedge;
+    short lives;
+    bool onLedge, isDead;
     int animFrame;
     bool facingRight;
 } Man;
@@ -29,10 +34,13 @@ typedef struct {
 } Ledge;
 
 typedef struct {
-    int x, y;
+    float x, y;
+    float w, h;
 } Star;
 
 typedef struct {
+    
+    float scrollX;
     //Players
     Man man;
 
@@ -45,15 +53,20 @@ typedef struct {
     //Hardware
     SDL_Renderer* renderer;
 
-    int time;
+    int time, deathCountdown;
     int statusState;
+
+    //Surfaces
+    SDL_Surface* fontSurface;
 
     //Textures
     SDL_Texture* starTexture;
     SDL_Texture* manFrames[3];
     SDL_Texture* brickTexture;
+    SDL_Texture* fireTexture;
     SDL_Texture* label;
 
+    //Fonts
     TTF_Font* font;
 } GameState;
 #endif

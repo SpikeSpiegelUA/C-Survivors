@@ -5,29 +5,22 @@
 #include "Status.h"
 #undef main
 
+
+
 void LoadGame(GameState* gameState) {
-    gameState->font = TTF_OpenFont("../Open-Pixel.ttf", 48);
+    gameState->font = TTF_OpenFont("../Fonts/crazy-pixel.ttf", 48);
     if (gameState->font == NULL) {
         printf("Image not found!!!\n");
         SDL_Quit();
         exit(1);
     }
 
-    gameState->man.x = 220.f;
-    gameState->man.y = 70.f;
-    gameState->man.dy = 0.f;
-    gameState->man.dx = 0.f;
-    gameState->man.animFrame = 0;
-    gameState->man.facingRight = true;
-    gameState->statusState = STATUS_STATE_LIVES;
-
-    InitStatusLives(gameState);
-
     SDL_Surface* starSurface = NULL;
     SDL_Surface* manIdleSurface = NULL;
     SDL_Surface* manLeftLegSurface = NULL;
     SDL_Surface* manRightLegSurface = NULL;
     SDL_Surface* brickSurface = NULL;
+    SDL_Surface* fireSurface = NULL;
 
     starSurface = IMG_Load("..\\Images\\star.png");
     if (starSurface == NULL) {
@@ -63,21 +56,38 @@ void LoadGame(GameState* gameState) {
         SDL_Quit();
         exit(1);
     }
+    
+    fireSurface = IMG_Load("..\\Images\\fire.png");
+    if (fireSurface == NULL) {
+        printf("Image not found!!!\n");
+        SDL_Quit();
+        exit(1);
+    }
+
+    gameState->man.x = 220.f;
+    gameState->man.y = 70.f;
+    gameState->man.w = (float)manIdleSurface->w;
+    gameState->man.h = (float)manIdleSurface->h;
+    gameState->man.dy = 0.f;
+    gameState->man.dx = 0.f;
+    gameState->man.animFrame = 0;
+    gameState->man.facingRight = true;
+    gameState->man.lives = 3;
+    gameState->man.isDead = false;
 
     gameState->starTexture = SDL_CreateTextureFromSurface(gameState->renderer, starSurface);
-    SDL_FreeSurface(starSurface);
     gameState->manFrames[0] = SDL_CreateTextureFromSurface(gameState->renderer, manIdleSurface);
-    SDL_FreeSurface(manIdleSurface);
     gameState->manFrames[1] = SDL_CreateTextureFromSurface(gameState->renderer, manLeftLegSurface);
-    SDL_FreeSurface(manLeftLegSurface);
     gameState->manFrames[2] = SDL_CreateTextureFromSurface(gameState->renderer, manRightLegSurface);
-    SDL_FreeSurface(manRightLegSurface);
     gameState->brickTexture = SDL_CreateTextureFromSurface(gameState->renderer, brickSurface);
-    SDL_FreeSurface(brickSurface);
+    gameState->fireTexture = SDL_CreateTextureFromSurface(gameState->renderer, fireSurface);
+
 
     for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++){
-        gameState->stars[i].x = rand()%640;
-        gameState->stars[i].y = rand()%480;
+        gameState->stars[i].x = (float)(rand()%640 * i+ SCREEN_WIDTH/2);
+        gameState->stars[i].y = (float)(rand()%480);
+        gameState->stars[i].w = (float)starSurface->w;
+        gameState->stars[i].h = (float)starSurface->h;
     }
 
     for (int Index = 0; Index < ArrayLength(gameState->ledges) - 1; Index++) {
@@ -88,11 +98,24 @@ void LoadGame(GameState* gameState) {
     }
 
     gameState->time = 0;
+    gameState->scrollX = 0;
+    gameState->deathCountdown = -1;
 
     gameState->ledges[99].h = 64;
     gameState->ledges[99].w = 64;
     gameState->ledges[99].x = 350;
     gameState->ledges[99].y = 200;
+
+    gameState->statusState = STATUS_STATE_LIVES;
+
+    InitStatusLives(gameState);
+
+    SDL_FreeSurface(brickSurface);
+    SDL_FreeSurface(manRightLegSurface);
+    SDL_FreeSurface(manLeftLegSurface);
+    SDL_FreeSurface(manIdleSurface);
+    SDL_FreeSurface(starSurface);
+    SDL_FreeSurface(fireSurface);
 }
 
 bool ProcessEvents(GameState* gameState) {
@@ -175,20 +198,68 @@ void PreCollisionProcessing(GameState* gameState) {
     else
         gameState->man.onLedge = true;
 
-    if (gameState->time > 120) {
-        gameState->statusState = STATUS_STATE_GAME;
+    if (gameState->time > 120 && gameState->statusState == STATUS_STATE_LIVES) {
         ShutdownStatusLives(gameState);
+        gameState->statusState = STATUS_STATE_GAME;
+    }
+    else if (gameState->statusState == STATUS_STATE_GAME ) {
+        Man* man = &gameState->man;
+        if (!gameState->man.isDead) {
+            man->y += man->dy;
+            man->x += man->dx;
+
+            gameState->scrollX = -man->x + SCREEN_WIDTH / 2.20f;
+            if (gameState->scrollX > 0)
+                gameState->scrollX = 0;
+        }
+        man->dy += GRAVITY;
+    }
+    else if (gameState->time > 120 && gameState->statusState == STATUS_STATE_GAMEOVER) {
+        ShutdownGameOver(gameState);
     }
 
-    Man* man = &gameState->man;
-    man->y += man->dy;
-    man->x += man->dx;
-
-    man->dy += GRAVITY;
+    if (gameState->man.isDead && gameState->deathCountdown < 0) {
+        gameState->deathCountdown = 120;
+    }
+    if (gameState->deathCountdown > 0) {
+        gameState->deathCountdown--;
+        if (gameState->deathCountdown <= 0) {
+            gameState->man.lives--;
+            if (gameState->man.lives > 0) {
+                InitStatusLives(gameState);
+                gameState->statusState = STATUS_STATE_LIVES;
+                gameState->time = 0;
+                gameState->man.isDead = false;
+                gameState->man.x = 220.f;
+                gameState->man.y = 70.f;
+                gameState->man.dx = 0.f;
+                gameState->man.dy = 0.f;
+                gameState->man.onLedge = false;
+                gameState->deathCountdown = -1;
+            }
+            else {
+                gameState->statusState = STATUS_STATE_GAMEOVER;
+                InitGameOver(gameState);
+                gameState->time = 0;
+            }
+        }
+    }
+}
+int Collide2D(float x1, float y1, float x2, float y2, float w1, float h1, float w2, float h2) {
+    return (!((x1 > (x2 + w2)) || (x2 > (x1 + w1)) || (y1 > (y2 + h2)) || (y2 > (y1 + h1))));
 }
 
+
 void CollisionDetection(GameState* gameState) {
-    //TODO: better collision detection.
+
+    for (int i = 0; i < ArrayLength(gameState->stars); i++) {
+        if (Collide2D(gameState->man.x, gameState->man.y, gameState->stars[i].x, gameState->stars[i].y,
+            gameState->man.w, gameState->man.h, gameState->stars[i].w, gameState->stars[i].h))
+        {
+            gameState->man.isDead = true;
+        }
+    }
+
     for (int i = 0; i < ArrayLength(gameState->ledges); i++) {
         float mw = 64.f, mh = 64.f;
         float mx = gameState->man.x, my = gameState->man.y;
@@ -229,28 +300,32 @@ void CollisionDetection(GameState* gameState) {
 }
 
 void RenderFrame(SDL_Renderer* renderer, GameState* gameState){
-    if (STATUS_STATE_LIVES)
+    if (gameState->statusState == STATUS_STATE_LIVES)
         DrawStatusLives(gameState);
-    else if (STATUS_STATE_GAME) {
-
-
+    else if (gameState->statusState == STATUS_STATE_GAME) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(renderer);
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
-        SDL_Rect manRect = { (int)gameState->man.x, (int)gameState->man.y, 64, 64 };
+        SDL_Rect manRect = { (int)(gameState->scrollX + gameState->man.x), (int)gameState->man.y, 64, 64 };
         SDL_RenderCopyEx(renderer, gameState->manFrames[gameState->man.animFrame], NULL, &manRect, 0, NULL, gameState->man.facingRight);
 
         for (int i = 0; i < ArrayLength(gameState->ledges); i++) {
-            SDL_Rect ledgeRect = { gameState->ledges[i].x, gameState->ledges[i].y, gameState->ledges[i].w, gameState->ledges[i].h };
+            SDL_Rect ledgeRect = { (int)(gameState->scrollX + gameState->ledges[i].x), (int)gameState->ledges[i].y, (int)gameState->ledges[i].w, (int)gameState->ledges[i].h };
             SDL_RenderCopy(renderer, gameState->brickTexture, NULL, &ledgeRect);
         }
 
-        /*for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++) {
-            SDL_Rect newStar = {gameState->stars[i].x, gameState->stars[i].y, 64, 64};
+        for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++) {
+            SDL_Rect newStar = {(int)(gameState->scrollX + gameState->stars[i].x), (int)gameState->stars[i].y, 64, 64};
             SDL_RenderCopy(renderer, gameState->starTexture, NULL, &newStar);
-        }*/
+        }
+
+        if (gameState->man.isDead) {
+            SDL_Rect newFire = { (int)(gameState->scrollX + gameState->man.x + gameState->man.w/2 - 64/2), 
+                (int)(gameState->man.y + gameState->man.h/2 - 64 / 2), 64, 64 };
+            SDL_RenderCopyEx(renderer, gameState->fireTexture, NULL, &newFire, 0, NULL, (gameState->time % 20 < 10));
+        }
     }
 
     SDL_RenderPresent(renderer);
@@ -266,7 +341,7 @@ int main()
     SDL_InitSubSystem(SDL_INIT_VIDEO);
     TTF_Init();
 
-    window = SDL_CreateWindow("C Survivors", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0);
+    window = SDL_CreateWindow("C Survivors", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     gameState.renderer = renderer;
@@ -277,7 +352,6 @@ int main()
 
     while (!done) {
         done = ProcessEvents(&gameState);
-        ProcessMiscellaneous(&gameState);
         PreCollisionProcessing(&gameState);
         CollisionDetection(&gameState);
         RenderFrame(renderer, &gameState);
@@ -289,8 +363,6 @@ int main()
     for (short Index = ArrayLength(gameState.manFrames) - 1; Index >= 0 ; Index--)
         SDL_DestroyTexture(gameState.manFrames[Index]);
     TTF_CloseFont(gameState.font);
-    if(gameState.label != NULL)
-        SDL_DestroyTexture(gameState.label);
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
 
