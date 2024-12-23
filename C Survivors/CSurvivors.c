@@ -5,15 +5,47 @@
 #include "Status.h"
 #undef main
 
+void FreeMemoryAndQuit(GameState* gameState) {
+    if (gameState->starTexture != NULL)
+        SDL_DestroyTexture(gameState->starTexture);
+    if (gameState->brickTexture != NULL)
+        SDL_DestroyTexture(gameState->brickTexture);
+    for (short Index = ArrayLength(gameState->manFrames) - 1; Index >= 0; Index--)
+        if (gameState->manFrames[Index] != NULL)
+            SDL_DestroyTexture(gameState->manFrames[Index]);
+    if (gameState->font != NULL)
+        TTF_CloseFont(gameState->font);
+    if (gameState->bgMusic != NULL)
+        Mix_FreeMusic(gameState->bgMusic);
+    if (gameState->jumpMixChunk != NULL)
+        Mix_FreeChunk(gameState->jumpMixChunk);
+    if (gameState->landMixChunk != NULL)
+        Mix_FreeChunk(gameState->landMixChunk);
+    if (gameState->deathMixChunk != NULL)
+        Mix_FreeChunk(gameState->deathMixChunk);
 
+    if (gameState->window != NULL)
+        SDL_DestroyWindow(gameState->window);
+    if (gameState->renderer != NULL)
+        SDL_DestroyRenderer(gameState->renderer);
+    TTF_Quit();
+    SDL_Quit();
+    Mix_Quit();
+    exit(1);
+}
 
+//Initialize all the textures, sounds, objects, etc...
 void LoadGame(GameState* gameState) {
+    //Load fonts.
+
     gameState->font = TTF_OpenFont("../Fonts/crazy-pixel.ttf", 48);
     if (gameState->font == NULL) {
         printf("Image not found!!!\n");
         SDL_Quit();
         exit(1);
     }
+
+    //Load surfaces.
 
     SDL_Surface* starSurface = NULL;
     SDL_Surface* manIdleSurface = NULL;
@@ -22,48 +54,60 @@ void LoadGame(GameState* gameState) {
     SDL_Surface* brickSurface = NULL;
     SDL_Surface* fireSurface = NULL;
 
+    //I don't want to store surfaces in gameState to free them in FreeMemoryAndQuit, so I will free them in the end of this function
+    //and control that using this bool.
+    bool error = false;
+
     starSurface = IMG_Load("..\\Images\\star.png");
     if (starSurface == NULL) {
         printf("Star image not found!!!\n");
-        SDL_Quit();
-        exit(1);
+        error = true;
     }
 
     manIdleSurface = IMG_Load("..\\Images\\Player\\Idle.png");
     if (manIdleSurface == NULL) {
         printf("Image not found!!!\n");
-        SDL_Quit();
-        exit(1);
+        error = true;
     }
 
     manLeftLegSurface = IMG_Load("..\\Images\\Player\\LeftLeg.png");
     if (manLeftLegSurface == NULL) {
         printf("Image not found!!!\n");
-        SDL_Quit();
-        exit(1);
+        error = true;
     }
 
     manRightLegSurface = IMG_Load("..\\Images\\Player\\RightLeg.png");
     if (manRightLegSurface == NULL) {
         printf("Image not found!!!\n");
-        SDL_Quit();
-        exit(1);
+        error = true;
     }
 
     brickSurface = IMG_Load("..\\Images\\brick.png");
     if (brickSurface == NULL) {
         printf("Image not found!!!\n");
-        SDL_Quit();
-        exit(1);
+        error = true;
     }
     
     fireSurface = IMG_Load("..\\Images\\fire.png");
     if (fireSurface == NULL) {
         printf("Image not found!!!\n");
-        SDL_Quit();
-        exit(1);
+        error = true;
     }
 
+    //Load sounds.
+
+    gameState->bgMusic = Mix_LoadMUS("..\\Audio\\MainTheme.wav");
+    if (gameState->bgMusic != NULL)
+        Mix_VolumeMusic(32);
+    gameState->deathMixChunk = Mix_LoadWAV("..\\Audio\\DeathSound.wav");
+    gameState->jumpMixChunk = Mix_LoadWAV("..\\Audio\\JumpSound.wav");
+    gameState->landMixChunk = Mix_LoadWAV("..\\Audio\\LandingSound.wav");
+    if (gameState->deathMixChunk == NULL || gameState->jumpMixChunk == NULL || gameState->landMixChunk == NULL || gameState->bgMusic == NULL) {
+        printf("Sound not found!!!\n");
+        error = true;
+    }
+
+    //Initialize objects and create textures.
     gameState->man.x = 220.f;
     gameState->man.y = 70.f;
     gameState->man.w = (float)manIdleSurface->w;
@@ -74,6 +118,7 @@ void LoadGame(GameState* gameState) {
     gameState->man.facingRight = true;
     gameState->man.lives = 3;
     gameState->man.isDead = false;
+    gameState->man.onLedge = false;
 
     gameState->starTexture = SDL_CreateTextureFromSurface(gameState->renderer, starSurface);
     gameState->manFrames[0] = SDL_CreateTextureFromSurface(gameState->renderer, manIdleSurface);
@@ -108,7 +153,11 @@ void LoadGame(GameState* gameState) {
 
     gameState->statusState = STATUS_STATE_LIVES;
 
+    //Init UI.
+
     InitStatusLives(gameState);
+
+    //Free all the dynamically allocated memory.
 
     SDL_FreeSurface(brickSurface);
     SDL_FreeSurface(manRightLegSurface);
@@ -116,6 +165,9 @@ void LoadGame(GameState* gameState) {
     SDL_FreeSurface(manIdleSurface);
     SDL_FreeSurface(starSurface);
     SDL_FreeSurface(fireSurface);
+
+    if (error)
+        FreeMemoryAndQuit(gameState);
 }
 
 bool ProcessEvents(GameState* gameState) {
@@ -133,6 +185,7 @@ bool ProcessEvents(GameState* gameState) {
                 if (gameState->man.onLedge) {
                     gameState->man.dy = -8.f;
                     gameState->man.onLedge = false;
+                    Mix_PlayChannel(-1, gameState->jumpMixChunk, 0);
                 }
             }
             break;
@@ -193,14 +246,11 @@ void ProcessMiscellaneous(GameState* gameState) {
 
 void PreCollisionProcessing(GameState* gameState) {
 
-    if (gameState->man.dy != 0)
-        gameState->man.onLedge = false;
-    else
-        gameState->man.onLedge = true;
 
     if (gameState->time > 120 && gameState->statusState == STATUS_STATE_LIVES) {
         ShutdownStatusLives(gameState);
         gameState->statusState = STATUS_STATE_GAME;
+        Mix_PlayMusic(gameState->bgMusic, -1);
     }
     else if (gameState->statusState == STATUS_STATE_GAME ) {
         Man* man = &gameState->man;
@@ -220,6 +270,8 @@ void PreCollisionProcessing(GameState* gameState) {
 
     if (gameState->man.isDead && gameState->deathCountdown < 0) {
         gameState->deathCountdown = 120;
+        Mix_PlayChannel(-1, gameState->deathMixChunk, 0);
+        Mix_HaltMusic();
     }
     if (gameState->deathCountdown > 0) {
         gameState->deathCountdown--;
@@ -257,6 +309,7 @@ void CollisionDetection(GameState* gameState) {
             gameState->man.w, gameState->man.h, gameState->stars[i].w, gameState->stars[i].h))
         {
             gameState->man.isDead = true;
+            break;
         }
     }
 
@@ -272,7 +325,10 @@ void CollisionDetection(GameState* gameState) {
                 gameState->man.dy = 0.f;
                 my = by - mh;
                 gameState->man.y = my;
-                gameState->man.onLedge = true;
+                if (gameState->man.onLedge == false) {
+                    Mix_PlayChannel(-1, gameState->landMixChunk, 0);
+                    gameState->man.onLedge = true;
+                }
             }
             //Bumping bottom of a brick.
             else if (my < by + bh && my > by && gameState->man.dy < 0) {
@@ -335,16 +391,15 @@ int main()
 {
     srand((unsigned int)(time(NULL)));
     GameState gameState;
-    SDL_Window* window = NULL;
-    SDL_Renderer* renderer = NULL;
 
-    SDL_InitSubSystem(SDL_INIT_VIDEO);
+
+    SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     TTF_Init();
 
-    window = SDL_CreateWindow("C Survivors", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    gameState.window = SDL_CreateWindow("C Survivors", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+    gameState.renderer = SDL_CreateRenderer(gameState.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    gameState.renderer = renderer;
+    Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 4096);
 
     LoadGame(&gameState);
 
@@ -354,20 +409,10 @@ int main()
         done = ProcessEvents(&gameState);
         PreCollisionProcessing(&gameState);
         CollisionDetection(&gameState);
-        RenderFrame(renderer, &gameState);
+        RenderFrame(gameState.renderer, &gameState);
     }
 
-
-    SDL_DestroyTexture(gameState.starTexture);
-    SDL_DestroyTexture(gameState.brickTexture);
-    for (short Index = ArrayLength(gameState.manFrames) - 1; Index >= 0 ; Index--)
-        SDL_DestroyTexture(gameState.manFrames[Index]);
-    TTF_CloseFont(gameState.font);
-    SDL_DestroyWindow(window);
-    SDL_DestroyRenderer(renderer);
-
-    TTF_Quit();
-    SDL_Quit();
+    FreeMemoryAndQuit(&gameState);
 
     return 0;
 }

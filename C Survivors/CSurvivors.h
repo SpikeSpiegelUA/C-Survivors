@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include "SDL_mixer.h"
 #include "ArrayFunctions.h"
 #include "GlobalVariables.h"
 
@@ -52,6 +53,7 @@ typedef struct {
 
     //Hardware
     SDL_Renderer* renderer;
+    SDL_Window* window;
 
     int time, deathCountdown;
     int statusState;
@@ -65,6 +67,10 @@ typedef struct {
     SDL_Texture* brickTexture;
     SDL_Texture* fireTexture;
     SDL_Texture* label;
+    
+    //Sounds
+    Mix_Chunk *deathMixChunk, * landMixChunk, * jumpMixChunk;
+    Mix_Music* bgMusic;
 
     //Fonts
     TTF_Font* font;
