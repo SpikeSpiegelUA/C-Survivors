@@ -1,0 +1,13 @@
+#ifndef CSURVIVORS_H
+#define CSURVIVORS_H
+
+#define STATUS_STATE_LIVES 0
+#define STATUS_STATE_GAME 1
+#define STATUS_STATE_GAMEOVER 2
+
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 480
+
+#define MAX_BULLETS 1000
+
+#endif

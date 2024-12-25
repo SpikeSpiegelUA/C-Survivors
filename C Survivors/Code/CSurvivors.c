@@ -2,7 +2,18 @@
 #define CSURVIVORS_C
 
 #include "CSurvivors.h"
-#include "Status.h"
+#include "UI/Status.h"
+#include "SDL.h"
+#include "SDL_image.h"
+#include "SDL_ttf.h"
+#include "SDL_mixer.h"
+#include "Utilities/ArrayFunctions.h"
+#include "Utilities/GlobalVariables.h"
+#include "Managers/GameState.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
 #undef main
 
 void FreeMemoryAndQuit(GameState* gameState) {
@@ -36,13 +47,17 @@ void FreeMemoryAndQuit(GameState* gameState) {
 
 //Initialize all the textures, sounds, objects, etc...
 void LoadGame(GameState* gameState) {
+
+    //I don't want to store surfaces in gameState to free them in FreeMemoryAndQuit, so I will free them in the end of this function
+    //and control that using this bool.
+    bool error = false;
+
     //Load fonts.
 
     gameState->font = TTF_OpenFont("../Fonts/crazy-pixel.ttf", 48);
     if (gameState->font == NULL) {
         printf("Image not found!!!\n");
-        SDL_Quit();
-        exit(1);
+        error = true;
     }
 
     //Load surfaces.
@@ -53,10 +68,6 @@ void LoadGame(GameState* gameState) {
     SDL_Surface* manRightLegSurface = NULL;
     SDL_Surface* brickSurface = NULL;
     SDL_Surface* fireSurface = NULL;
-
-    //I don't want to store surfaces in gameState to free them in FreeMemoryAndQuit, so I will free them in the end of this function
-    //and control that using this bool.
-    bool error = false;
 
     starSurface = IMG_Load("..\\Images\\star.png");
     if (starSurface == NULL) {
@@ -114,11 +125,15 @@ void LoadGame(GameState* gameState) {
     gameState->man.h = (float)manIdleSurface->h;
     gameState->man.dy = 0.f;
     gameState->man.dx = 0.f;
-    gameState->man.animFrame = 0;
+    gameState->man.currentSprite = 0;
     gameState->man.facingRight = true;
     gameState->man.lives = 3;
     gameState->man.isDead = false;
     gameState->man.onLedge = false;
+    gameState->time = 0;
+    gameState->scrollX = 0;
+    gameState->deathCountdown = -1;
+    gameState->statusState = STATUS_STATE_LIVES;
 
     gameState->starTexture = SDL_CreateTextureFromSurface(gameState->renderer, starSurface);
     gameState->manFrames[0] = SDL_CreateTextureFromSurface(gameState->renderer, manIdleSurface);
@@ -127,7 +142,11 @@ void LoadGame(GameState* gameState) {
     gameState->brickTexture = SDL_CreateTextureFromSurface(gameState->renderer, brickSurface);
     gameState->fireTexture = SDL_CreateTextureFromSurface(gameState->renderer, fireSurface);
 
+    //Initialize bullets;
+    //for (int index = 0; index < MAX_BULLETS; index++)
+    //    gameState->bullets[index] = NULL;
 
+    //Create stars.
     for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++){
         gameState->stars[i].x = (float)(rand()%640 * i+ SCREEN_WIDTH/2);
         gameState->stars[i].y = (float)(rand()%480);
@@ -135,23 +154,18 @@ void LoadGame(GameState* gameState) {
         gameState->stars[i].h = (float)starSurface->h;
     }
 
+    //Create ledges.
     for (int Index = 0; Index < ArrayLength(gameState->ledges) - 1; Index++) {
-        gameState->ledges[Index].h = 64;
-        gameState->ledges[Index].w = 64;
-        gameState->ledges[Index].x = Index * 64;
-        gameState->ledges[Index].y = 400;
+        gameState->ledges[Index].h = 64.f;
+        gameState->ledges[Index].w = 64.f;
+        gameState->ledges[Index].x = Index * 64.f;
+        gameState->ledges[Index].y = 400.f;
     }
-
-    gameState->time = 0;
-    gameState->scrollX = 0;
-    gameState->deathCountdown = -1;
 
     gameState->ledges[99].h = 64;
     gameState->ledges[99].w = 64;
     gameState->ledges[99].x = 350;
     gameState->ledges[99].y = 200;
-
-    gameState->statusState = STATUS_STATE_LIVES;
 
     //Init UI.
 
@@ -224,24 +238,20 @@ bool ProcessEvents(GameState* gameState) {
     if ((gameState->man.dx > 2.0f || gameState->man.dx < -2.0f) && gameState->man.onLedge)
     {
         if (gameState->time % 20 == 0) {
-            if (gameState->man.animFrame == 1 || gameState->man.animFrame == 0) {
-                gameState->man.animFrame = 2;
+            if (gameState->man.currentSprite == 1 || gameState->man.currentSprite == 0) {
+                gameState->man.currentSprite = 2;
             }
-            else if (gameState->man.animFrame == 2 || gameState->man.animFrame == 0) {
-                gameState->man.animFrame = 1;
+            else if (gameState->man.currentSprite == 2 || gameState->man.currentSprite == 0) {
+                gameState->man.currentSprite = 1;
             }
         }
     }
     else 
     {
-        gameState->man.animFrame = 0;
+        gameState->man.currentSprite = 0;
     }
 
     return false;
-}
-
-void ProcessMiscellaneous(GameState* gameState) {
-
 }
 
 void PreCollisionProcessing(GameState* gameState) {
@@ -365,7 +375,7 @@ void RenderFrame(SDL_Renderer* renderer, GameState* gameState){
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
         SDL_Rect manRect = { (int)(gameState->scrollX + gameState->man.x), (int)gameState->man.y, 64, 64 };
-        SDL_RenderCopyEx(renderer, gameState->manFrames[gameState->man.animFrame], NULL, &manRect, 0, NULL, gameState->man.facingRight);
+        SDL_RenderCopyEx(renderer, gameState->manFrames[gameState->man.currentSprite], NULL, &manRect, 0, NULL, gameState->man.facingRight);
 
         for (int i = 0; i < ArrayLength(gameState->ledges); i++) {
             SDL_Rect ledgeRect = { (int)(gameState->scrollX + gameState->ledges[i].x), (int)gameState->ledges[i].y, (int)gameState->ledges[i].w, (int)gameState->ledges[i].h };

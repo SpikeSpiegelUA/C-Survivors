@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Status.h"
+#include "SDL.h"
+#include <stdio.h>
 
 void InitStatusLives(GameState* gameState)
 {

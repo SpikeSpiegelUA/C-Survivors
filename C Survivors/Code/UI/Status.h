@@ -1,5 +1,7 @@
 #pragma once
-#include "CSurvivors.h"
+
+#include "Managers/GameState.h"
+
 
 void InitStatusLives(GameState* gameState);
 void DrawStatusLives(GameState* gameState);
