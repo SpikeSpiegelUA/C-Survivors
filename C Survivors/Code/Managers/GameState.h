@@ -2,11 +2,11 @@
 
 #include "Entities/Man.h"
 #include "Entities/Star.h"
-#include "Entities/Bullet.h"
 #include "Entities/Ledge.h"
 #include "SDL.h"
 #include "SDL_mixer.h"
 #include "SDL_ttf.h"
+#include "Entities/Bullet.h"
 
 typedef struct {
 
@@ -18,7 +18,7 @@ typedef struct {
     Star stars[100];
 
     //Bullets.
-    //Bullet** bullets;
+    BulletVector* bulletVector;
 
     //Ledges
     Ledge ledges[100];

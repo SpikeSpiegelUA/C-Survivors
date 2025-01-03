@@ -127,6 +127,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,7 +141,6 @@
     <ClCompile Include="Code\Entities\Man.c" />
     <ClCompile Include="Code\Entities\Star.c" />
     <ClCompile Include="Code\Managers\GameState.c" />
-    <ClCompile Include="Code\Utilities\Vector.c" />
     <ClCompile Include="Code\CSurvivors.c" />
     <ClInclude Include="Code\CSurvivors.h" />
     <ClInclude Include="Code\Entities\Bullet.h" />
@@ -153,7 +153,6 @@
     <ClCompile Include="Code\Entities\Bullet.c" />
     <ClCompile Include="Code\UI\Status.c" />
     <ClInclude Include="Code\UI\Status.h" />
-    <ClInclude Include="Code\Utilities\Vector.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

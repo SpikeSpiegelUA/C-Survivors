@@ -24,9 +24,6 @@
     <ClCompile Include="Code\Entities\Bullet.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Utilities\Vector.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Managers\GameState.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -48,9 +45,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Code\UI\Status.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Utilities\Vector.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Code\Entities\Bullet.h">

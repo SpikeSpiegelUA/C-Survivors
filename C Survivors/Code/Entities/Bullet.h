@@ -1,15 +1,16 @@
 #pragma once
-
-#include "Utilities/Vector.h"
-
-CREATE_VECTOR_STRUCT(Bullet)
-CREATE_INIT_VECTOR(Bullet)
-CREATE_INSERT_VECTOR(Bullet)
-CREATE_FREE_VECTOR(Bullet)
+#include <stdlib.h>
 
 typedef struct {
     float x, y, dx;
 } Bullet;
 
-void RemoveBullet(int bulletsArrayIndex);
-BulletVector* AddBullet(Bullet* gameState, float x, float y, float dx);
+typedef struct {
+	Bullet* array;
+	size_t used, size;
+} BulletVector;
+
+void InitBulletVector(BulletVector* vector, size_t initialSize);
+void InsertBulletVector(BulletVector* vector, Bullet* element);
+void RemoveBulletVector(BulletVector* vector, Bullet* element);
+void FreeBulletVector(BulletVector* vector);

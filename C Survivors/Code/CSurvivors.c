@@ -171,6 +171,10 @@ void LoadGame(GameState* gameState) {
 
     InitStatusLives(gameState);
 
+    //Init all the other stuff.
+    gameState->bulletVector = malloc(sizeof(BulletVector));
+    InitBulletVector(gameState->bulletVector, 10);
+
     //Free all the dynamically allocated memory.
 
     SDL_FreeSurface(brickSurface);
