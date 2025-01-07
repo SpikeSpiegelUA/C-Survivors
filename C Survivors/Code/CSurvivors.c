@@ -21,6 +21,8 @@ void FreeMemoryAndQuit(GameState* gameState) {
         SDL_DestroyTexture(gameState->starTexture);
     if (gameState->brickTexture != NULL)
         SDL_DestroyTexture(gameState->brickTexture);
+    if (gameState->bulletTexture != NULL)
+        SDL_DestroyTexture(gameState->bulletTexture);
     for (short Index = ArrayLength(gameState->manFrames) - 1; Index >= 0; Index--)
         if (gameState->manFrames[Index] != NULL)
             SDL_DestroyTexture(gameState->manFrames[Index]);
@@ -39,6 +41,10 @@ void FreeMemoryAndQuit(GameState* gameState) {
         SDL_DestroyWindow(gameState->window);
     if (gameState->renderer != NULL)
         SDL_DestroyRenderer(gameState->renderer);
+    
+    if (gameState->bulletVector != NULL)
+        FreeBulletVector(gameState->bulletVector);
+
     TTF_Quit();
     SDL_Quit();
     Mix_Quit();
@@ -68,6 +74,7 @@ void LoadGame(GameState* gameState) {
     SDL_Surface* manRightLegSurface = NULL;
     SDL_Surface* brickSurface = NULL;
     SDL_Surface* fireSurface = NULL;
+    SDL_Surface* bulletSurface = NULL;
 
     starSurface = IMG_Load("..\\Images\\star.png");
     if (starSurface == NULL) {
@@ -101,6 +108,12 @@ void LoadGame(GameState* gameState) {
     
     fireSurface = IMG_Load("..\\Images\\fire.png");
     if (fireSurface == NULL) {
+        printf("Image not found!!!\n");
+        error = true;
+    }
+
+    bulletSurface = IMG_Load("..\\Images\\bullet.png");
+    if (bulletSurface == NULL) {
         printf("Image not found!!!\n");
         error = true;
     }
@@ -141,10 +154,7 @@ void LoadGame(GameState* gameState) {
     gameState->manFrames[2] = SDL_CreateTextureFromSurface(gameState->renderer, manRightLegSurface);
     gameState->brickTexture = SDL_CreateTextureFromSurface(gameState->renderer, brickSurface);
     gameState->fireTexture = SDL_CreateTextureFromSurface(gameState->renderer, fireSurface);
-
-    //Initialize bullets;
-    //for (int index = 0; index < MAX_BULLETS; index++)
-    //    gameState->bullets[index] = NULL;
+    gameState->bulletTexture = SDL_CreateTextureFromSurface(gameState->renderer, bulletSurface);
 
     //Create stars.
     for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++){
@@ -183,6 +193,7 @@ void LoadGame(GameState* gameState) {
     SDL_FreeSurface(manIdleSurface);
     SDL_FreeSurface(starSurface);
     SDL_FreeSurface(fireSurface);
+    SDL_FreeSurface(bulletSurface);
 
     if (error)
         FreeMemoryAndQuit(gameState);
@@ -205,6 +216,10 @@ bool ProcessEvents(GameState* gameState) {
                     gameState->man.onLedge = false;
                     Mix_PlayChannel(-1, gameState->jumpMixChunk, 0);
                 }
+                break;
+            case SDLK_SPACE:
+                AddBulletToGame(gameState->bulletVector, gameState->man.x, gameState->man.y, -1);
+                break;
             }
             break;
         case SDL_QUIT:
@@ -310,6 +325,14 @@ void PreCollisionProcessing(GameState* gameState) {
             }
         }
     }
+
+    for (int index = 0; index < gameState->bulletVector->used; index++) {
+        if (gameState->bulletVector->array[index] != NULL) {
+               gameState->bulletVector->array[index]->x += gameState->bulletVector->array[index]->dx;
+            if (gameState->bulletVector->array[index]->x > SCREEN_RIGHT_MAX || gameState->bulletVector->array[index]->x < SCREEN_LEFT_MAX)
+                RemoveBulletFromGame(gameState->bulletVector, index);
+        }
+    }
 }
 int Collide2D(float x1, float y1, float x2, float y2, float w1, float h1, float w2, float h2) {
     return (!((x1 > (x2 + w2)) || (x2 > (x1 + w1)) || (y1 > (y2 + h2)) || (y2 > (y1 + h1))));
@@ -389,6 +412,13 @@ void RenderFrame(SDL_Renderer* renderer, GameState* gameState){
         for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++) {
             SDL_Rect newStar = {(int)(gameState->scrollX + gameState->stars[i].x), (int)gameState->stars[i].y, 64, 64};
             SDL_RenderCopy(renderer, gameState->starTexture, NULL, &newStar);
+        }
+
+        for (int i = 0; i < gameState->bulletVector->used; i++) {
+            if (gameState->bulletVector->array[i] != NULL) {
+                SDL_Rect newBullet = { (int)(gameState->scrollX + gameState->bulletVector->array[i]->x), (int)gameState->bulletVector->array[i]->y, 8, 8 };
+                SDL_RenderCopy(renderer, gameState->bulletTexture, NULL, &newBullet);
+            }
         }
 
         if (gameState->man.isDead) {

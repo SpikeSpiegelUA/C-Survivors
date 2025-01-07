@@ -10,4 +10,7 @@
 
 #define MAX_BULLETS 1000
 
+#define SCREEN_LEFT_MAX -0
+#define SCREEN_RIGHT_MAX 2000
+
 #endif
