@@ -10,5 +10,5 @@ typedef struct {
     short lives;
     bool onLedge, isDead;
     int currentSprite;
-    bool facingRight;
+    bool facingLeft;
 } Man;

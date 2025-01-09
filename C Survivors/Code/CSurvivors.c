@@ -23,9 +23,14 @@ void FreeMemoryAndQuit(GameState* gameState) {
         SDL_DestroyTexture(gameState->brickTexture);
     if (gameState->bulletTexture != NULL)
         SDL_DestroyTexture(gameState->bulletTexture);
-    for (short Index = ArrayLength(gameState->manFrames) - 1; Index >= 0; Index--)
-        if (gameState->manFrames[Index] != NULL)
-            SDL_DestroyTexture(gameState->manFrames[Index]);
+    if (gameState->manTexture != NULL)
+        SDL_DestroyTexture(gameState->manTexture);
+    if (gameState->backgroundTexture != NULL)
+        SDL_DestroyTexture(gameState->backgroundTexture);
+    if (gameState->fireTexture != NULL)
+        SDL_DestroyTexture(gameState->fireTexture);
+    if (gameState->label != NULL)
+        SDL_DestroyTexture(gameState->label);
     if (gameState->font != NULL)
         TTF_CloseFont(gameState->font);
     if (gameState->bgMusic != NULL)
@@ -36,6 +41,8 @@ void FreeMemoryAndQuit(GameState* gameState) {
         Mix_FreeChunk(gameState->landMixChunk);
     if (gameState->deathMixChunk != NULL)
         Mix_FreeChunk(gameState->deathMixChunk);
+    if (gameState->shotMixChunk != NULL)
+        Mix_FreeChunk(gameState->shotMixChunk);
 
     if (gameState->window != NULL)
         SDL_DestroyWindow(gameState->window);
@@ -69,12 +76,11 @@ void LoadGame(GameState* gameState) {
     //Load surfaces.
 
     SDL_Surface* starSurface = NULL;
-    SDL_Surface* manIdleSurface = NULL;
-    SDL_Surface* manLeftLegSurface = NULL;
-    SDL_Surface* manRightLegSurface = NULL;
+    SDL_Surface* manSpriteSheetSurface = NULL;
     SDL_Surface* brickSurface = NULL;
     SDL_Surface* fireSurface = NULL;
     SDL_Surface* bulletSurface = NULL;
+    SDL_Surface* backgroundSurface = NULL;
 
     starSurface = IMG_Load("..\\Images\\star.png");
     if (starSurface == NULL) {
@@ -82,26 +88,20 @@ void LoadGame(GameState* gameState) {
         error = true;
     }
 
-    manIdleSurface = IMG_Load("..\\Images\\Player\\Idle.png");
-    if (manIdleSurface == NULL) {
-        printf("Image not found!!!\n");
-        error = true;
-    }
-
-    manLeftLegSurface = IMG_Load("..\\Images\\Player\\LeftLeg.png");
-    if (manLeftLegSurface == NULL) {
-        printf("Image not found!!!\n");
-        error = true;
-    }
-
-    manRightLegSurface = IMG_Load("..\\Images\\Player\\RightLeg.png");
-    if (manRightLegSurface == NULL) {
-        printf("Image not found!!!\n");
-        error = true;
-    }
-
     brickSurface = IMG_Load("..\\Images\\brick.png");
     if (brickSurface == NULL) {
+        printf("Image not found!!!\n");
+        error = true;
+    }
+
+    backgroundSurface = IMG_Load("..\\Images\\background.png");
+    if (backgroundSurface == NULL) {
+        printf("Image not found!!!\n");
+        error = true;
+    }
+
+    manSpriteSheetSurface = IMG_Load("..\\Images\\Sheets\\mansheet.png");
+    if (manSpriteSheetSurface == NULL) {
         printf("Image not found!!!\n");
         error = true;
     }
@@ -126,7 +126,9 @@ void LoadGame(GameState* gameState) {
     gameState->deathMixChunk = Mix_LoadWAV("..\\Audio\\DeathSound.wav");
     gameState->jumpMixChunk = Mix_LoadWAV("..\\Audio\\JumpSound.wav");
     gameState->landMixChunk = Mix_LoadWAV("..\\Audio\\LandingSound.wav");
-    if (gameState->deathMixChunk == NULL || gameState->jumpMixChunk == NULL || gameState->landMixChunk == NULL || gameState->bgMusic == NULL) {
+    gameState->shotMixChunk = Mix_LoadWAV("..\\Audio\\ShotSound.wav");
+    if (gameState->deathMixChunk == NULL || gameState->jumpMixChunk == NULL || gameState->landMixChunk == NULL || gameState->bgMusic == NULL
+        || gameState->shotMixChunk == NULL){
         printf("Sound not found!!!\n");
         error = true;
     }
@@ -134,12 +136,12 @@ void LoadGame(GameState* gameState) {
     //Initialize objects and create textures.
     gameState->man.x = 220.f;
     gameState->man.y = 70.f;
-    gameState->man.w = (float)manIdleSurface->w;
-    gameState->man.h = (float)manIdleSurface->h;
+    gameState->man.w = 110;
+    gameState->man.h = 120;
     gameState->man.dy = 0.f;
     gameState->man.dx = 0.f;
     gameState->man.currentSprite = 0;
-    gameState->man.facingRight = true;
+    gameState->man.facingLeft = false;
     gameState->man.lives = 3;
     gameState->man.isDead = false;
     gameState->man.onLedge = false;
@@ -149,33 +151,24 @@ void LoadGame(GameState* gameState) {
     gameState->statusState = STATUS_STATE_LIVES;
 
     gameState->starTexture = SDL_CreateTextureFromSurface(gameState->renderer, starSurface);
-    gameState->manFrames[0] = SDL_CreateTextureFromSurface(gameState->renderer, manIdleSurface);
-    gameState->manFrames[1] = SDL_CreateTextureFromSurface(gameState->renderer, manLeftLegSurface);
-    gameState->manFrames[2] = SDL_CreateTextureFromSurface(gameState->renderer, manRightLegSurface);
     gameState->brickTexture = SDL_CreateTextureFromSurface(gameState->renderer, brickSurface);
     gameState->fireTexture = SDL_CreateTextureFromSurface(gameState->renderer, fireSurface);
+    gameState->manTexture = SDL_CreateTextureFromSurface(gameState->renderer, manSpriteSheetSurface);
     gameState->bulletTexture = SDL_CreateTextureFromSurface(gameState->renderer, bulletSurface);
+    gameState->backgroundTexture = SDL_CreateTextureFromSurface(gameState->renderer, backgroundSurface);
 
     //Create stars.
     for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++){
-        gameState->stars[i].x = (float)(rand()%640 * i+ SCREEN_WIDTH/2);
+        gameState->stars[i].x = (float)(rand()%640 * i + SCREEN_WIDTH);
         gameState->stars[i].y = (float)(rand()%480);
         gameState->stars[i].w = (float)starSurface->w;
         gameState->stars[i].h = (float)starSurface->h;
     }
 
-    //Create ledges.
-    for (int Index = 0; Index < ArrayLength(gameState->ledges) - 1; Index++) {
-        gameState->ledges[Index].h = 64.f;
-        gameState->ledges[Index].w = 64.f;
-        gameState->ledges[Index].x = Index * 64.f;
-        gameState->ledges[Index].y = 400.f;
-    }
-
-    gameState->ledges[99].h = 64;
-    gameState->ledges[99].w = 64;
-    gameState->ledges[99].x = 350;
-    gameState->ledges[99].y = 200;
+    gameState->ledges[0].h = 64;
+    gameState->ledges[0].w = 64;
+    gameState->ledges[0].x = 350;
+    gameState->ledges[0].y = 200;
 
     //Init UI.
 
@@ -188,9 +181,7 @@ void LoadGame(GameState* gameState) {
     //Free all the dynamically allocated memory.
 
     SDL_FreeSurface(brickSurface);
-    SDL_FreeSurface(manRightLegSurface);
-    SDL_FreeSurface(manLeftLegSurface);
-    SDL_FreeSurface(manIdleSurface);
+    SDL_FreeSurface(manSpriteSheetSurface);
     SDL_FreeSurface(starSurface);
     SDL_FreeSurface(fireSurface);
     SDL_FreeSurface(bulletSurface);
@@ -218,7 +209,11 @@ bool ProcessEvents(GameState* gameState) {
                 }
                 break;
             case SDLK_SPACE:
-                AddBulletToGame(gameState->bulletVector, gameState->man.x, gameState->man.y, -1);
+                if(gameState->man.facingLeft)
+                    AddBulletToGame(gameState->bulletVector, gameState->man.x - 30, gameState->man.y + gameState->man.h/2 - 20, -5);
+                else
+                    AddBulletToGame(gameState->bulletVector, gameState->man.x + gameState->man.w, gameState->man.y + gameState->man.h/2 - 20, 5);
+                Mix_PlayChannel(-1, gameState->shotMixChunk, 0);
                 break;
             }
             break;
@@ -240,13 +235,13 @@ bool ProcessEvents(GameState* gameState) {
         gameState->man.dx += 0.5f;
         if (gameState->man.dx > 6.f)
             gameState->man.dx = 6.f;
-        gameState->man.facingRight = true;
+        gameState->man.facingLeft = false;
     }
     else if (state[SDL_SCANCODE_LEFT]) {
         gameState->man.dx -= 0.5f;
         if (gameState->man.dx < -6.f)
             gameState->man.dx = -6.f;
-        gameState->man.facingRight = false;
+        gameState->man.facingLeft = true;
     }
     else {
         gameState->man.dx *= 0.8f;
@@ -256,13 +251,9 @@ bool ProcessEvents(GameState* gameState) {
 
     if ((gameState->man.dx > 2.0f || gameState->man.dx < -2.0f) && gameState->man.onLedge)
     {
-        if (gameState->time % 20 == 0) {
-            if (gameState->man.currentSprite == 1 || gameState->man.currentSprite == 0) {
-                gameState->man.currentSprite = 2;
-            }
-            else if (gameState->man.currentSprite == 2 || gameState->man.currentSprite == 0) {
-                gameState->man.currentSprite = 1;
-            }
+        if (gameState->time % 6 == 0) {
+            gameState->man.currentSprite++;
+            gameState->man.currentSprite %= 4;
         }
     }
     else 
@@ -351,7 +342,7 @@ void CollisionDetection(GameState* gameState) {
     }
 
     for (int i = 0; i < ArrayLength(gameState->ledges); i++) {
-        float mw = 64.f, mh = 64.f;
+        float mw = gameState->man.w, mh = gameState->man.h;
         float mx = gameState->man.x, my = gameState->man.y;
         float bw = (float)gameState->ledges[i].w, bh = (float)gameState->ledges[i].h,
             bx = (float)gameState->ledges[i].x, by = (float)gameState->ledges[i].y;
@@ -389,6 +380,16 @@ void CollisionDetection(GameState* gameState) {
                 gameState->man.dx = 0;
             }
         }
+
+        //Prevent player to fall through the ground.
+        if (gameState->man.y > 300) {
+            gameState->man.dy = 0.f;
+            gameState->man.y = 300;
+            if (gameState->man.onLedge == false) {
+                Mix_PlayChannel(-1, gameState->landMixChunk, 0);
+                gameState->man.onLedge = true;
+            }
+        }
     }
 }
 
@@ -399,10 +400,12 @@ void RenderFrame(SDL_Renderer* renderer, GameState* gameState){
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(renderer);
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+        SDL_Rect backgroundRect = { (int)gameState->scrollX, 0, 640, 480 };
+        SDL_RenderCopy(renderer, gameState->backgroundTexture, NULL, &backgroundRect);
 
-        SDL_Rect manRect = { (int)(gameState->scrollX + gameState->man.x), (int)gameState->man.y, 64, 64 };
-        SDL_RenderCopyEx(renderer, gameState->manFrames[gameState->man.currentSprite], NULL, &manRect, 0, NULL, gameState->man.facingRight);
+        SDL_Rect srcManRect = { gameState->man.currentSprite * 40, 0, 40, 50 };
+        SDL_Rect destManRect = { (int)(gameState->scrollX + gameState->man.x), (int)gameState->man.y, 110, 120 };
+        SDL_RenderCopyEx(renderer, gameState->manTexture, &srcManRect, &destManRect, 0, NULL, gameState->man.facingLeft);
 
         for (int i = 0; i < ArrayLength(gameState->ledges); i++) {
             SDL_Rect ledgeRect = { (int)(gameState->scrollX + gameState->ledges[i].x), (int)gameState->ledges[i].y, (int)gameState->ledges[i].w, (int)gameState->ledges[i].h };
@@ -416,7 +419,7 @@ void RenderFrame(SDL_Renderer* renderer, GameState* gameState){
 
         for (int i = 0; i < gameState->bulletVector->used; i++) {
             if (gameState->bulletVector->array[i] != NULL) {
-                SDL_Rect newBullet = { (int)(gameState->scrollX + gameState->bulletVector->array[i]->x), (int)gameState->bulletVector->array[i]->y, 8, 8 };
+                SDL_Rect newBullet = { (int)(gameState->scrollX + gameState->bulletVector->array[i]->x), (int)gameState->bulletVector->array[i]->y, 32, 32 };
                 SDL_RenderCopy(renderer, gameState->bulletTexture, NULL, &newBullet);
             }
         }

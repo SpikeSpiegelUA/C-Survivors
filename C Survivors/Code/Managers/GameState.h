@@ -35,14 +35,15 @@ typedef struct {
 
     //Textures
     SDL_Texture* starTexture;
-    SDL_Texture* manFrames[3];
     SDL_Texture* brickTexture;
     SDL_Texture* fireTexture;
+    SDL_Texture* manTexture;
+    SDL_Texture* backgroundTexture;
     SDL_Texture* label;
     SDL_Texture* bulletTexture;
 
     //Sounds
-    Mix_Chunk* deathMixChunk, * landMixChunk, * jumpMixChunk;
+    Mix_Chunk* deathMixChunk, *landMixChunk, *jumpMixChunk, *shotMixChunk;
     Mix_Music* bgMusic;
 
     //Fonts

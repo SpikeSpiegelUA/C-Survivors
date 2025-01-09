@@ -20,8 +20,9 @@ void DrawStatusLives(GameState* gameState)
 
 	SDL_RenderClear(gameState->renderer);
 
-	SDL_Rect manRect = { 320-80, 240 - 24, 64, 64 };
-	SDL_RenderCopyEx(gameState->renderer, gameState->manFrames[0], NULL, &manRect, 0, NULL, gameState->man.facingRight);
+	SDL_Rect srcmanRect = { 40, 0, 40, 50 };
+	SDL_Rect destManRect = { 320-80, 240 - 24, 80, 90 };
+	SDL_RenderCopyEx(gameState->renderer, gameState->manTexture, &srcmanRect, &destManRect, 0, NULL, gameState->man.facingLeft);
 
 	SDL_SetRenderDrawColor(gameState->renderer, 255, 255, 255, 255);
 
