@@ -7,6 +7,7 @@
 #include "SDL_mixer.h"
 #include "SDL_ttf.h"
 #include "Entities/Bullet.h"
+#include "Entities/Background.h"
 
 typedef struct {
 
@@ -22,6 +23,9 @@ typedef struct {
 
     //Ledges
     Ledge ledges[100];
+
+    //Background
+    Background backgrounds[15];
 
     //Hardware
     SDL_Renderer* renderer;

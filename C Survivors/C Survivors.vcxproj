@@ -137,12 +137,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Code\Entities\Background.cpp" />
     <ClCompile Include="Code\Entities\Ledge.c" />
     <ClCompile Include="Code\Entities\Man.c" />
     <ClCompile Include="Code\Entities\Star.c" />
     <ClCompile Include="Code\Managers\GameState.c" />
     <ClCompile Include="Code\CSurvivors.c" />
     <ClInclude Include="Code\CSurvivors.h" />
+    <ClInclude Include="Code\Entities\Background.h" />
     <ClInclude Include="Code\Entities\Bullet.h" />
     <ClInclude Include="Code\Entities\Ledge.h" />
     <ClInclude Include="Code\Entities\Man.h" />

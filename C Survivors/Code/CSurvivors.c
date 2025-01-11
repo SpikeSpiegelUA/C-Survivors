@@ -140,7 +140,7 @@ void LoadGame(GameState* gameState) {
     gameState->man.h = 120;
     gameState->man.dy = 0.f;
     gameState->man.dx = 0.f;
-    gameState->man.currentSprite = 0;
+    gameState->man.currentSprite = 5;
     gameState->man.facingLeft = false;
     gameState->man.lives = 3;
     gameState->man.isDead = false;
@@ -163,6 +163,14 @@ void LoadGame(GameState* gameState) {
         gameState->stars[i].y = (float)(rand()%480);
         gameState->stars[i].w = (float)starSurface->w;
         gameState->stars[i].h = (float)starSurface->h;
+    }
+
+    //Create backgrounds.
+    for (int i = 0; i < sizeof(gameState->backgrounds) / sizeof(Background); i++) {
+        gameState->backgrounds[i].x = (float)(640 * i);
+        gameState->backgrounds[i].y = 0;
+        gameState->backgrounds[i].w = 640.f;
+        gameState->backgrounds[i].h = 480.f;
     }
 
     gameState->ledges[0].h = 64;
@@ -210,9 +218,9 @@ bool ProcessEvents(GameState* gameState) {
                 break;
             case SDLK_SPACE:
                 if(gameState->man.facingLeft)
-                    AddBulletToGame(gameState->bulletVector, gameState->man.x - 30, gameState->man.y + gameState->man.h/2 - 20, -5);
+                    AddBulletToGame(gameState->bulletVector, gameState->man.x - 30, gameState->man.y + gameState->man.h/2 - 20, -10);
                 else
-                    AddBulletToGame(gameState->bulletVector, gameState->man.x + gameState->man.w, gameState->man.y + gameState->man.h/2 - 20, 5);
+                    AddBulletToGame(gameState->bulletVector, gameState->man.x + gameState->man.w, gameState->man.y + gameState->man.h/2 - 20, 10);
                 Mix_PlayChannel(-1, gameState->shotMixChunk, 0);
                 break;
             }
@@ -258,7 +266,7 @@ bool ProcessEvents(GameState* gameState) {
     }
     else 
     {
-        gameState->man.currentSprite = 0;
+        gameState->man.currentSprite = 5;
     }
 
     return false;
@@ -400,8 +408,11 @@ void RenderFrame(SDL_Renderer* renderer, GameState* gameState){
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(renderer);
 
-        SDL_Rect backgroundRect = { (int)gameState->scrollX, 0, 640, 480 };
-        SDL_RenderCopy(renderer, gameState->backgroundTexture, NULL, &backgroundRect);
+        for (int i = 0; i < sizeof(gameState->backgrounds) / sizeof(Background); i++) {
+            SDL_Rect backgroundRect = { (int)(gameState->scrollX + gameState->backgrounds[i].x), (int)gameState->backgrounds[i].y,
+                (int)gameState->backgrounds[i].w, (int)gameState->backgrounds[i].h };
+            SDL_RenderCopy(renderer, gameState->backgroundTexture, NULL, &backgroundRect);
+        }
 
         SDL_Rect srcManRect = { gameState->man.currentSprite * 40, 0, 40, 50 };
         SDL_Rect destManRect = { (int)(gameState->scrollX + gameState->man.x), (int)gameState->man.y, 110, 120 };
@@ -413,8 +424,8 @@ void RenderFrame(SDL_Renderer* renderer, GameState* gameState){
         }
 
         for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++) {
-            SDL_Rect newStar = {(int)(gameState->scrollX + gameState->stars[i].x), (int)gameState->stars[i].y, 64, 64};
-            SDL_RenderCopy(renderer, gameState->starTexture, NULL, &newStar);
+            SDL_Rect starRect = {(int)(gameState->scrollX + gameState->stars[i].x), (int)gameState->stars[i].y, 64, 64};
+            SDL_RenderCopy(renderer, gameState->starTexture, NULL, &starRect);
         }
 
         for (int i = 0; i < gameState->bulletVector->used; i++) {
