@@ -7,7 +7,9 @@
 #include "SDL_mixer.h"
 #include "SDL_ttf.h"
 #include "Entities/Bullet.h"
+#include "Entities/EnemyJarhead.h"
 #include "Entities/Background.h"
+#include "Entities/Particle.h"
 
 typedef struct {
 
@@ -20,6 +22,12 @@ typedef struct {
 
     //Bullets.
     BulletVector* bulletVector;
+
+    //Enemies.
+    EnemyJarheadVector* enemyJarheadVector;
+
+    //Particles.
+    ParticleVector* particleVector;
 
     //Ledges
     Ledge ledges[100];
@@ -45,9 +53,11 @@ typedef struct {
     SDL_Texture* backgroundTexture;
     SDL_Texture* label;
     SDL_Texture* bulletTexture;
+    SDL_Texture* enemyJarheadTexture;
+    SDL_Texture* bloodParticleTexture;
 
     //Sounds
-    Mix_Chunk* deathMixChunk, *landMixChunk, *jumpMixChunk, *shotMixChunk;
+    Mix_Chunk* deathMixChunk, *landMixChunk, *jumpMixChunk, *shotMixChunk, *enemyDeathMixChunk;
     Mix_Music* bgMusic;
 
     //Fonts

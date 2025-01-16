@@ -8,7 +8,7 @@ typedef struct {
     float dx, dy;
     char name[31];
     short lives;
-    bool onLedge, isDead;
+    bool onLedge, isDead, isShooting;
     int currentSprite;
     bool facingLeft;
 } Man;

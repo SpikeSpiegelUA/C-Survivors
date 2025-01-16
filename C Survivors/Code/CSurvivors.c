@@ -31,6 +31,10 @@ void FreeMemoryAndQuit(GameState* gameState) {
         SDL_DestroyTexture(gameState->fireTexture);
     if (gameState->label != NULL)
         SDL_DestroyTexture(gameState->label);
+    if (gameState->enemyJarheadTexture != NULL)
+        SDL_DestroyTexture(gameState->enemyJarheadTexture);
+    if (gameState->bloodParticleTexture != NULL)
+        SDL_DestroyTexture(gameState->bloodParticleTexture);
     if (gameState->font != NULL)
         TTF_CloseFont(gameState->font);
     if (gameState->bgMusic != NULL)
@@ -43,6 +47,8 @@ void FreeMemoryAndQuit(GameState* gameState) {
         Mix_FreeChunk(gameState->deathMixChunk);
     if (gameState->shotMixChunk != NULL)
         Mix_FreeChunk(gameState->shotMixChunk);
+    if (gameState->enemyDeathMixChunk != NULL)
+        Mix_FreeChunk(gameState->enemyDeathMixChunk);
 
     if (gameState->window != NULL)
         SDL_DestroyWindow(gameState->window);
@@ -51,6 +57,10 @@ void FreeMemoryAndQuit(GameState* gameState) {
     
     if (gameState->bulletVector != NULL)
         FreeBulletVector(gameState->bulletVector);
+    if (gameState->enemyJarheadVector != NULL)
+        FreeEnemyJarheadVector(gameState->enemyJarheadVector);
+    if (gameState->particleVector != NULL)
+        FreeParticleVector(gameState->particleVector);
 
     TTF_Quit();
     SDL_Quit();
@@ -81,6 +91,8 @@ void LoadGame(GameState* gameState) {
     SDL_Surface* fireSurface = NULL;
     SDL_Surface* bulletSurface = NULL;
     SDL_Surface* backgroundSurface = NULL;
+    SDL_Surface* enemyJarheadSurface = NULL;
+    SDL_Surface* bloodParticleSurface = NULL;
 
     starSurface = IMG_Load("..\\Images\\star.png");
     if (starSurface == NULL) {
@@ -118,6 +130,18 @@ void LoadGame(GameState* gameState) {
         error = true;
     }
 
+    bloodParticleSurface = IMG_Load("..\\Images\\blood.png");
+    if (bloodParticleSurface == NULL) {
+        printf("Image not found!!!\n");
+        error = true;
+    }
+
+    enemyJarheadSurface = IMG_Load("..\\Images\\Sheets\\enemyjarheadsheet.png");
+    if (enemyJarheadSurface == NULL) {
+        printf("Image not found!!!\n");
+        error = true;
+    }
+
     //Load sounds.
 
     gameState->bgMusic = Mix_LoadMUS("..\\Audio\\MainTheme.wav");
@@ -127,8 +151,9 @@ void LoadGame(GameState* gameState) {
     gameState->jumpMixChunk = Mix_LoadWAV("..\\Audio\\JumpSound.wav");
     gameState->landMixChunk = Mix_LoadWAV("..\\Audio\\LandingSound.wav");
     gameState->shotMixChunk = Mix_LoadWAV("..\\Audio\\ShotSound.wav");
+    gameState->enemyDeathMixChunk = Mix_LoadWAV("..\\Audio\\EnemyDeathSound.wav");
     if (gameState->deathMixChunk == NULL || gameState->jumpMixChunk == NULL || gameState->landMixChunk == NULL || gameState->bgMusic == NULL
-        || gameState->shotMixChunk == NULL){
+        || gameState->shotMixChunk == NULL || gameState->enemyDeathMixChunk == NULL){
         printf("Sound not found!!!\n");
         error = true;
     }
@@ -145,6 +170,7 @@ void LoadGame(GameState* gameState) {
     gameState->man.lives = 3;
     gameState->man.isDead = false;
     gameState->man.onLedge = false;
+    gameState->man.isShooting = false;
     gameState->time = 0;
     gameState->scrollX = 0;
     gameState->deathCountdown = -1;
@@ -156,6 +182,8 @@ void LoadGame(GameState* gameState) {
     gameState->manTexture = SDL_CreateTextureFromSurface(gameState->renderer, manSpriteSheetSurface);
     gameState->bulletTexture = SDL_CreateTextureFromSurface(gameState->renderer, bulletSurface);
     gameState->backgroundTexture = SDL_CreateTextureFromSurface(gameState->renderer, backgroundSurface);
+    gameState->enemyJarheadTexture = SDL_CreateTextureFromSurface(gameState->renderer, enemyJarheadSurface);
+    gameState->bloodParticleTexture = SDL_CreateTextureFromSurface(gameState->renderer, bloodParticleSurface);
 
     //Create stars.
     for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++){
@@ -182,9 +210,15 @@ void LoadGame(GameState* gameState) {
 
     InitStatusLives(gameState);
 
-    //Init all the other stuff.
+    //Init vectors.
     gameState->bulletVector = malloc(sizeof(BulletVector));
     InitBulletVector(gameState->bulletVector, 10);
+    gameState->enemyJarheadVector = malloc(sizeof(EnemyJarheadVector));
+    InitEnemyJarheadVector(gameState->enemyJarheadVector, 10);
+    gameState->particleVector = malloc(sizeof(ParticleVector));
+    InitParticleVector(gameState->particleVector, 10);
+
+    AddEnemyJarheadToGame(gameState->enemyJarheadVector, 350.f, 300.f, 0.f, 0.f, 4, 110, 120, true, false, false);
 
     //Free all the dynamically allocated memory.
 
@@ -193,6 +227,9 @@ void LoadGame(GameState* gameState) {
     SDL_FreeSurface(starSurface);
     SDL_FreeSurface(fireSurface);
     SDL_FreeSurface(bulletSurface);
+    SDL_FreeSurface(backgroundSurface);
+    SDL_FreeSurface(enemyJarheadSurface);
+    SDL_FreeSurface(bloodParticleSurface);
 
     if (error)
         FreeMemoryAndQuit(gameState);
@@ -216,13 +253,6 @@ bool ProcessEvents(GameState* gameState) {
                     Mix_PlayChannel(-1, gameState->jumpMixChunk, 0);
                 }
                 break;
-            case SDLK_SPACE:
-                if(gameState->man.facingLeft)
-                    AddBulletToGame(gameState->bulletVector, gameState->man.x - 30, gameState->man.y + gameState->man.h/2 - 20, -10);
-                else
-                    AddBulletToGame(gameState->bulletVector, gameState->man.x + gameState->man.w, gameState->man.y + gameState->man.h/2 - 20, 10);
-                Mix_PlayChannel(-1, gameState->shotMixChunk, 0);
-                break;
             }
             break;
         case SDL_QUIT:
@@ -238,18 +268,41 @@ bool ProcessEvents(GameState* gameState) {
         gameState->man.dy -= 0.2f;
     }
 
+    if (gameState->man.dx == 0 && gameState->man.onLedge) {
+        if (state[SDL_SCANCODE_SPACE]) {
+            gameState->man.isShooting = true;
+            if (gameState->time % 12 == 0) {
+                if (gameState->man.currentSprite == 4)
+                    gameState->man.currentSprite = 5;
+                else
+                    gameState->man.currentSprite = 4;
+                if (gameState->man.facingLeft)
+                    AddBulletToGame(gameState->bulletVector, gameState->man.x - 30, gameState->man.y + gameState->man.h / 2 - 20, 8, 8, -10);
+                else
+                    AddBulletToGame(gameState->bulletVector, gameState->man.x + gameState->man.w, gameState->man.y + gameState->man.h / 2 - 20, 8, 8, 10);
+                Mix_PlayChannel(-1, gameState->shotMixChunk, 0);
+            }
+        }
+        else {
+            gameState->man.isShooting = false;
+            gameState->man.currentSprite = 4;
+        }
+    }
+    
     //Walking
     if (state[SDL_SCANCODE_RIGHT]) {
         gameState->man.dx += 0.5f;
         if (gameState->man.dx > 6.f)
             gameState->man.dx = 6.f;
         gameState->man.facingLeft = false;
+        gameState->man.isShooting = false;
     }
     else if (state[SDL_SCANCODE_LEFT]) {
         gameState->man.dx -= 0.5f;
         if (gameState->man.dx < -6.f)
             gameState->man.dx = -6.f;
         gameState->man.facingLeft = true;
+        gameState->man.isShooting = false;
     }
     else {
         gameState->man.dx *= 0.8f;
@@ -257,17 +310,18 @@ bool ProcessEvents(GameState* gameState) {
             gameState->man.dx = 0;
     }
 
-    if ((gameState->man.dx > 2.0f || gameState->man.dx < -2.0f) && gameState->man.onLedge)
-    {
-        if (gameState->time % 6 == 0) {
-            gameState->man.currentSprite++;
-            gameState->man.currentSprite %= 4;
+    if(!gameState->man.isShooting)
+        if ((gameState->man.dx > 2.0f || gameState->man.dx < -2.0f) && gameState->man.onLedge)
+        {
+            if (gameState->time % 6 == 0) {
+                gameState->man.currentSprite++;
+                gameState->man.currentSprite %= 4;
+            }
         }
-    }
-    else 
-    {
-        gameState->man.currentSprite = 5;
-    }
+        else 
+        {
+            gameState->man.currentSprite = 4;
+        }
 
     return false;
 }
@@ -332,6 +386,16 @@ void PreCollisionProcessing(GameState* gameState) {
                 RemoveBulletFromGame(gameState->bulletVector, index);
         }
     }
+
+    //Process particles.
+    for (int i = 0; i < gameState->particleVector->used; i++) {
+        gameState->particleVector->array[i]->x += gameState->particleVector->array[i]->dx;
+        gameState->particleVector->array[i]->y += gameState->particleVector->array[i]->dy;
+        gameState->particleVector->array[i]->dy += GRAVITY;
+        gameState->particleVector->array[i]->life--;
+        if (gameState->particleVector->array[i]->life <= 0)
+            RemoveParticleFromGame(gameState->particleVector, i);
+    }
 }
 int Collide2D(float x1, float y1, float x2, float y2, float w1, float h1, float w2, float h2) {
     return (!((x1 > (x2 + w2)) || (x2 > (x1 + w1)) || (y1 > (y2 + h2)) || (y2 > (y1 + h1))));
@@ -340,6 +404,7 @@ int Collide2D(float x1, float y1, float x2, float y2, float w1, float h1, float 
 
 void CollisionDetection(GameState* gameState) {
 
+    //Stars and the player collision.
     for (int i = 0; i < ArrayLength(gameState->stars); i++) {
         if (Collide2D(gameState->man.x, gameState->man.y, gameState->stars[i].x, gameState->stars[i].y,
             gameState->man.w, gameState->man.h, gameState->stars[i].w, gameState->stars[i].h))
@@ -349,6 +414,24 @@ void CollisionDetection(GameState* gameState) {
         }
     }
 
+    //Bullets and enemies/player collision.
+    for (int i = 0; i < gameState->bulletVector->used; i++) 
+        for (int i = 0; i < gameState->enemyJarheadVector->used; i++) {
+            if (Collide2D(gameState->bulletVector->array[i]->x, gameState->bulletVector->array[i]->y,
+                gameState->enemyJarheadVector->array[i]->x, gameState->enemyJarheadVector->array[i]->y,
+                (float) gameState->bulletVector->array[i]->w, (float) gameState->bulletVector->array[i]->h,
+                (float) gameState->enemyJarheadVector->array[i]->w, (float) gameState->enemyJarheadVector->array[i]->h))
+            {
+                if (!gameState->enemyJarheadVector->array[i]->isDead) {
+                    gameState->enemyJarheadVector->array[i]->isDead = true;
+                    AddParticleToGame(gameState->particleVector, gameState->enemyJarheadVector->array[i]->x + gameState->enemyJarheadVector->array[i]->w/2,
+                        gameState->enemyJarheadVector->array[i]->y + gameState->enemyJarheadVector->array[i]->h / 2, 5.f, 50);
+                }
+                break;
+            }
+        }
+
+    //Player and ledges collision.
     for (int i = 0; i < ArrayLength(gameState->ledges); i++) {
         float mw = gameState->man.w, mh = gameState->man.h;
         float mx = gameState->man.x, my = gameState->man.y;
@@ -401,33 +484,61 @@ void CollisionDetection(GameState* gameState) {
     }
 }
 
+void PostCollisionProcessing(GameState* gameState) {
+    //Process death of an enemy.
+    for (int i = 0; i < gameState->enemyJarheadVector->used; i++) {
+        if (gameState->enemyJarheadVector->array[i]->isDead && gameState->time % 6 == 0) {
+            if (gameState->enemyJarheadVector->array[i]->toGarbageCollect) {
+                RemoveEnemyJarheadFromGame(gameState->enemyJarheadVector, i);
+            }
+            else {
+                if (gameState->enemyJarheadVector->array[i]->currentSprite < 6)
+                    gameState->enemyJarheadVector->array[i]->currentSprite = 6;
+                else if (gameState->enemyJarheadVector->array[i]->currentSprite >= 6) {
+                    gameState->enemyJarheadVector->array[i]->currentSprite++;
+                    if (gameState->enemyJarheadVector->array[i]->currentSprite > 7) {
+                        gameState->enemyJarheadVector->array[i]->toGarbageCollect = true;
+                        gameState->enemyJarheadVector->array[i]->currentSprite = 7;
+                    }
+                }
+            }
+        }
+    }
+}
+
 void RenderFrame(SDL_Renderer* renderer, GameState* gameState){
+    //Draw the start screen at the beginning of each round.
     if (gameState->statusState == STATUS_STATE_LIVES)
         DrawStatusLives(gameState);
     else if (gameState->statusState == STATUS_STATE_GAME) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(renderer);
 
+        //Draw the background.
         for (int i = 0; i < sizeof(gameState->backgrounds) / sizeof(Background); i++) {
             SDL_Rect backgroundRect = { (int)(gameState->scrollX + gameState->backgrounds[i].x), (int)gameState->backgrounds[i].y,
                 (int)gameState->backgrounds[i].w, (int)gameState->backgrounds[i].h };
             SDL_RenderCopy(renderer, gameState->backgroundTexture, NULL, &backgroundRect);
         }
 
+        //Draw the player.
         SDL_Rect srcManRect = { gameState->man.currentSprite * 40, 0, 40, 50 };
         SDL_Rect destManRect = { (int)(gameState->scrollX + gameState->man.x), (int)gameState->man.y, 110, 120 };
         SDL_RenderCopyEx(renderer, gameState->manTexture, &srcManRect, &destManRect, 0, NULL, gameState->man.facingLeft);
 
+        //Draw ledges.
         for (int i = 0; i < ArrayLength(gameState->ledges); i++) {
             SDL_Rect ledgeRect = { (int)(gameState->scrollX + gameState->ledges[i].x), (int)gameState->ledges[i].y, (int)gameState->ledges[i].w, (int)gameState->ledges[i].h };
             SDL_RenderCopy(renderer, gameState->brickTexture, NULL, &ledgeRect);
         }
 
-        for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++) {
+        //Draw stars.
+        for (int i = 0; i < ArrayLength(gameState->stars); i++) {
             SDL_Rect starRect = {(int)(gameState->scrollX + gameState->stars[i].x), (int)gameState->stars[i].y, 64, 64};
             SDL_RenderCopy(renderer, gameState->starTexture, NULL, &starRect);
         }
 
+        //Draw bullets.
         for (int i = 0; i < gameState->bulletVector->used; i++) {
             if (gameState->bulletVector->array[i] != NULL) {
                 SDL_Rect newBullet = { (int)(gameState->scrollX + gameState->bulletVector->array[i]->x), (int)gameState->bulletVector->array[i]->y, 32, 32 };
@@ -435,6 +546,24 @@ void RenderFrame(SDL_Renderer* renderer, GameState* gameState){
             }
         }
 
+        //Draw all the enemy jarheads.
+        for (int i = 0; i < gameState->enemyJarheadVector->used; i++) {
+            if (gameState->enemyJarheadVector->array[i] != NULL) {
+                SDL_Rect newEnemyJarheadSourceRect = { 40 * gameState->enemyJarheadVector->array[i]->currentSprite, 0, 40, 50 };
+                SDL_Rect newEnemyJarheadRect = { (int)(gameState->scrollX + gameState->enemyJarheadVector->array[i]->x), (int)gameState->enemyJarheadVector->array[i]->y, gameState->enemyJarheadVector->array[i]->w, gameState->enemyJarheadVector->array[i]->h };
+                SDL_RenderCopyEx(renderer, gameState->enemyJarheadTexture, &newEnemyJarheadSourceRect, &newEnemyJarheadRect, 0, NULL, gameState->enemyJarheadVector->array[i]->facingLeft);
+            }
+        }
+
+        //Draw particles.
+        for (int i = 0; i < gameState->particleVector->used; i++) {
+            if (gameState->particleVector->array[i] != NULL) {
+                SDL_Rect newParticleRect = { (int)(gameState->scrollX + gameState->particleVector->array[i]->x), (int)gameState->particleVector->array[i]->y, 8, 8 };
+                SDL_RenderCopy(renderer, gameState->bloodParticleTexture, NULL, &newParticleRect);
+            }
+        }
+
+        //Draw the player's death fire.
         if (gameState->man.isDead) {
             SDL_Rect newFire = { (int)(gameState->scrollX + gameState->man.x + gameState->man.w/2 - 64/2), 
                 (int)(gameState->man.y + gameState->man.h/2 - 64 / 2), 64, 64 };
@@ -467,6 +596,7 @@ int main()
         done = ProcessEvents(&gameState);
         PreCollisionProcessing(&gameState);
         CollisionDetection(&gameState);
+        PostCollisionProcessing(&gameState);
         RenderFrame(gameState.renderer, &gameState);
     }
 

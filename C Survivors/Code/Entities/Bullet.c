@@ -42,6 +42,7 @@ void RemoveBulletVector(BulletVector* vector, Bullet* element)
 	for (int i = 0; i < vector->used; i++) {
 		if (vector->array[i] == element) {
 			free(vector->array[i]);
+			vector->array[i] = NULL;
 			Internal_ShrinkVector(vector, i);
 			vector->used--;
 			break;
@@ -56,15 +57,18 @@ void FreeBulletVector(BulletVector* vector)
 	free(vector->array);
 	vector->array = NULL;
 	vector->used = vector->size = 0;
+	free(vector);
 }
 
-bool AddBulletToGame(BulletVector* bulletVector, float x, float y, float dx)
+bool AddBulletToGame(BulletVector* bulletVector, float x, float y, int w, int h, float dx)
 {
 	Bullet* newBullet = malloc(sizeof(Bullet));
 	if (newBullet != NULL) {
 		newBullet->x = x;
 		newBullet->y = y;
 		newBullet->dx = dx;
+		newBullet->w = w;
+		newBullet->h = h;
 		InsertBulletVector(bulletVector, newBullet);
 		return true;
 	}
