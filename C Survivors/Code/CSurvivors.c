@@ -401,6 +401,21 @@ int Collide2D(float x1, float y1, float x2, float y2, float w1, float h1, float 
     return (!((x1 > (x2 + w2)) || (x2 > (x1 + w1)) || (y1 > (y2 + h2)) || (y2 > (y1 + h1))));
 }
 
+void AIProcessing(GameState* gameState) {
+    for (int i = 0; i < gameState->enemyJarheadVector->used; i++) {
+        EnemyJarhead* enemyJarhead = gameState->enemyJarheadVector->array[i];
+        if (enemyJarhead->x + gameState->scrollX <= gameState->man.x + gameState->scrollX + 400 && enemyJarhead->x + gameState->scrollX >= gameState->man.x + gameState->scrollX - 400) {
+            if (enemyJarhead->x + gameState->scrollX <= gameState->man.x + gameState->scrollX) {
+                enemyJarhead->x += 1.f;
+                enemyJarhead->facingLeft = false;
+            }
+            else if (enemyJarhead->x + gameState->scrollX >= gameState->man.x + gameState->scrollX) {
+                enemyJarhead->x -= 1.f;
+                enemyJarhead->facingLeft = true;
+            }
+        }
+    }
+}
 
 void CollisionDetection(GameState* gameState) {
 
@@ -595,6 +610,7 @@ int main()
     while (!done) {
         done = ProcessEvents(&gameState);
         PreCollisionProcessing(&gameState);
+        AIProcessing(&gameState);
         CollisionDetection(&gameState);
         PostCollisionProcessing(&gameState);
         RenderFrame(gameState.renderer, &gameState);
