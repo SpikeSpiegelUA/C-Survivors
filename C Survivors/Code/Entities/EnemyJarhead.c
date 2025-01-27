@@ -70,8 +70,8 @@ bool AddEnemyJarheadToGame(EnemyJarheadVector* enemyJarheadVector, float x, floa
 		newEnemyJarhead->dy = dy;
 		newEnemyJarhead->w = w;
 		newEnemyJarhead->h = h;
-		newEnemyJarhead->isDead = false;
-		newEnemyJarhead->toGarbageCollect = false;
+		newEnemyJarhead->isDead = isDead;
+		newEnemyJarhead->toGarbageCollect = toGarbageCollect;
 		newEnemyJarhead->currentSprite = currentSprite;
 		newEnemyJarhead->facingLeft = facingLeft;
 		InsertEnemyJarheadVector(enemyJarheadVector, newEnemyJarhead);

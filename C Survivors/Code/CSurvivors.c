@@ -186,12 +186,12 @@ void LoadGame(GameState* gameState) {
     gameState->bloodParticleTexture = SDL_CreateTextureFromSurface(gameState->renderer, bloodParticleSurface);
 
     //Create stars.
-    for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++){
+    /*for (int i = 0; i < sizeof(gameState->stars) / sizeof(Star); i++) {
         gameState->stars[i].x = (float)(rand()%640 * i + SCREEN_WIDTH);
         gameState->stars[i].y = (float)(rand()%480);
         gameState->stars[i].w = (float)starSurface->w;
         gameState->stars[i].h = (float)starSurface->h;
-    }
+    }*/
 
     //Create backgrounds.
     for (int i = 0; i < sizeof(gameState->backgrounds) / sizeof(Background); i++) {
@@ -218,7 +218,7 @@ void LoadGame(GameState* gameState) {
     gameState->particleVector = malloc(sizeof(ParticleVector));
     InitParticleVector(gameState->particleVector, 10);
 
-    AddEnemyJarheadToGame(gameState->enemyJarheadVector, 350.f, 300.f, 0.f, 0.f, 4, 110, 120, true, false, false);
+    AddEnemyJarheadToGame(gameState->enemyJarheadVector, 1000.f, 300.f, 0.f, 0.f, 4, 110, 120, true, false, false);
 
     //Free all the dynamically allocated memory.
 
@@ -340,7 +340,7 @@ void PreCollisionProcessing(GameState* gameState) {
             man->y += man->dy;
             man->x += man->dx;
 
-            gameState->scrollX = -man->x + SCREEN_WIDTH / 2.20f;
+            gameState->scrollX = -man->x + SCREEN_WIDTH / 3.f;
             if (gameState->scrollX > 0)
                 gameState->scrollX = 0;
         }
@@ -397,24 +397,37 @@ void PreCollisionProcessing(GameState* gameState) {
             RemoveParticleFromGame(gameState->particleVector, i);
     }
 }
-int Collide2D(float x1, float y1, float x2, float y2, float w1, float h1, float w2, float h2) {
-    return (!((x1 > (x2 + w2)) || (x2 > (x1 + w1)) || (y1 > (y2 + h2)) || (y2 > (y1 + h1))));
-}
+
 
 void AIProcessing(GameState* gameState) {
     for (int i = 0; i < gameState->enemyJarheadVector->used; i++) {
         EnemyJarhead* enemyJarhead = gameState->enemyJarheadVector->array[i];
-        if (enemyJarhead->x + gameState->scrollX <= gameState->man.x + gameState->scrollX + 400 && enemyJarhead->x + gameState->scrollX >= gameState->man.x + gameState->scrollX - 400) {
+        if (enemyJarhead->x + gameState->scrollX <= gameState->man.x + gameState->scrollX + 400 && enemyJarhead->x + gameState->scrollX >= gameState->man.x + gameState->scrollX - 400
+            && !enemyJarhead->isDead) {
             if (enemyJarhead->x + gameState->scrollX <= gameState->man.x + gameState->scrollX) {
-                enemyJarhead->x += 1.f;
+                enemyJarhead->x += 2.f;
                 enemyJarhead->facingLeft = false;
             }
             else if (enemyJarhead->x + gameState->scrollX >= gameState->man.x + gameState->scrollX) {
-                enemyJarhead->x -= 1.f;
+                enemyJarhead->x -= 2.f;
                 enemyJarhead->facingLeft = true;
+            }
+            if (gameState->time % 6 == 0 ) {
+                enemyJarhead->currentSprite++;
+                enemyJarhead->currentSprite %= 4;
+            }
+            if (gameState->time % 60 == 0) {
+                if (enemyJarhead->facingLeft)
+                    AddBulletToGame(gameState->bulletVector, enemyJarhead->x - 30, enemyJarhead->y + enemyJarhead->h / 2 - 20, 8, 8, -4.f);
+                else
+                    AddBulletToGame(gameState->bulletVector, enemyJarhead->x + enemyJarhead->w, enemyJarhead->y + enemyJarhead->h / 2 - 20, 8, 8, 4.f);
             }
         }
     }
+}
+
+int Collide2D(float x1, float y1, float x2, float y2, float w1, float h1, float w2, float h2) {
+    return (!((x1 > (x2 + w2)) || (x2 > (x1 + w1)) || (y1 > (y2 + h2)) || (y2 > (y1 + h1))));
 }
 
 void CollisionDetection(GameState* gameState) {
@@ -431,16 +444,17 @@ void CollisionDetection(GameState* gameState) {
 
     //Bullets and enemies/player collision.
     for (int i = 0; i < gameState->bulletVector->used; i++) 
-        for (int i = 0; i < gameState->enemyJarheadVector->used; i++) {
-            if (Collide2D(gameState->bulletVector->array[i]->x, gameState->bulletVector->array[i]->y,
-                gameState->enemyJarheadVector->array[i]->x, gameState->enemyJarheadVector->array[i]->y,
+        for (int j = 0; j < gameState->enemyJarheadVector->used; j++) {
+             if (Collide2D(gameState->bulletVector->array[i]->x, gameState->bulletVector->array[i]->y,
+                gameState->enemyJarheadVector->array[j]->x, gameState->enemyJarheadVector->array[j]->y,
                 (float) gameState->bulletVector->array[i]->w, (float) gameState->bulletVector->array[i]->h,
-                (float) gameState->enemyJarheadVector->array[i]->w, (float) gameState->enemyJarheadVector->array[i]->h))
+                (float) gameState->enemyJarheadVector->array[j]->w, (float) gameState->enemyJarheadVector->array[j]->h))
             {
-                if (!gameState->enemyJarheadVector->array[i]->isDead) {
-                    gameState->enemyJarheadVector->array[i]->isDead = true;
-                    AddParticleToGame(gameState->particleVector, gameState->enemyJarheadVector->array[i]->x + gameState->enemyJarheadVector->array[i]->w/2,
-                        gameState->enemyJarheadVector->array[i]->y + gameState->enemyJarheadVector->array[i]->h / 2, 5.f, 50);
+
+                if (!gameState->enemyJarheadVector->array[j]->isDead) {
+                    gameState->enemyJarheadVector->array[j]->isDead = true;
+                    AddParticleToGame(gameState->particleVector, gameState->enemyJarheadVector->array[j]->x + gameState->enemyJarheadVector->array[j]->w/2,
+                        gameState->enemyJarheadVector->array[j]->y + gameState->enemyJarheadVector->array[j]->h / 2, 5.f, 50);
                 }
                 break;
             }
@@ -455,7 +469,7 @@ void CollisionDetection(GameState* gameState) {
 
         if (mx + mw > bx && mx < bx + bw) {
             //Bumping top of a brick.
-            if (my < by && my + mh > by && gameState->man.dy > 0) {
+            if (my < by && my + mh > by && my + mh < by + bh && gameState->man.dy > 0) {
                 gameState->man.dy = 0.f;
                 my = by - mh;
                 gameState->man.y = my;
@@ -474,16 +488,30 @@ void CollisionDetection(GameState* gameState) {
 
         if (my + mh > by && my < by + bh) {
             //Bumping right side of a brick.
-            if (mx < bx + bw && mx + mw > bx + bw && gameState->man.dx < 0) {
-                mx = bx + bw;
-                gameState->man.x = mx;
-                gameState->man.dx = 0;
+            if (mx < bx + bw && mx + mw > bx + bw && mx > bx + bw/2 && gameState->man.dx < 0) {
+                if (fabs(mx - bx + bw) > bw / 4) {
+                    mx = bx + bw;
+                    gameState->man.x = mx;
+                    gameState->man.dx = 0;
+                }
+                else {
+                    mx = 1;
+                    gameState->man.x = mx;
+                    gameState->man.dx = 0;
+                }
             }
             //Bumping left side of a brick.
-            else if (mx < bx && mx + mw > bx && gameState->man.dx > 0) {
-                mx = bx - mw;
-                gameState->man.x = mx;
-                gameState->man.dx = 0;
+            else if (mx < bx && mx + mw > bx && mx < bx + bw / 2 && gameState->man.dx > 0) {
+                if (fabs(mx - bx) > bw / 4) {
+                    mx = bx - mw;
+                    gameState->man.x = mx;
+                    gameState->man.dx = 0;
+                }
+                else {
+                    mx = 1;
+                    gameState->man.x = mx;
+                    gameState->man.dx = 0;
+                }
             }
         }
 
@@ -511,7 +539,7 @@ void PostCollisionProcessing(GameState* gameState) {
                     gameState->enemyJarheadVector->array[i]->currentSprite = 6;
                 else if (gameState->enemyJarheadVector->array[i]->currentSprite >= 6) {
                     gameState->enemyJarheadVector->array[i]->currentSprite++;
-                    if (gameState->enemyJarheadVector->array[i]->currentSprite > 7) {
+                    if (gameState->enemyJarheadVector->array[i]->currentSprite >= 7) {
                         gameState->enemyJarheadVector->array[i]->toGarbageCollect = true;
                         gameState->enemyJarheadVector->array[i]->currentSprite = 7;
                     }
