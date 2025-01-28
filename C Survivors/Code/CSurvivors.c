@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include "Utilities/SATCollision.h"
 
 #undef main
 
@@ -460,8 +461,48 @@ void CollisionDetection(GameState* gameState) {
             }
         }
 
-    //Player and ledges collision.
+    Vector2DVector playerVertices;
+    Vector2DVector ledgeVertices;
+    InitVector2DVector(&playerVertices, 8);
+    InitVector2DVector(&ledgeVertices, 8);
     for (int i = 0; i < ArrayLength(gameState->ledges); i++) {
+        Vector2D playerVertice1;
+        Vector2D playerVertice2;
+        Vector2D playerVertice3;
+        Vector2D playerVertice4;
+        Vector2D ledgeVertice1;
+        Vector2D ledgeVertice2;
+        Vector2D ledgeVertice3;
+        Vector2D ledgeVertice4;
+        playerVertice1.x = gameState->man.x;
+        playerVertice1.y = gameState->man.y;
+        InsertVector2DVector(&playerVertices, &playerVertice1);
+        playerVertice2.x = gameState->man.x + gameState->man.w;
+        playerVertice2.y = gameState->man.y;
+        InsertVector2DVector(&playerVertices, &playerVertice2);
+        playerVertice3.x = gameState->man.x + gameState->man.w;
+        playerVertice3.y = gameState->man.y + gameState->man.h;
+        InsertVector2DVector(&playerVertices, &playerVertice3);
+        playerVertice4.x = gameState->man.x;
+        playerVertice4.y = gameState->man.y + gameState->man.h;
+        InsertVector2DVector(&playerVertices, &playerVertice4);
+        ledgeVertice1.x = gameState->ledges[i].x;
+        ledgeVertice1.y = gameState->ledges[i].y;
+        InsertVector2DVector(&ledgeVertices, &ledgeVertice1);
+        ledgeVertice2.x = gameState->ledges[i].x + gameState->ledges[i].w;
+        ledgeVertice2.y = gameState->ledges[i].y;
+        InsertVector2DVector(&ledgeVertices, &ledgeVertice2);
+        ledgeVertice3.x = gameState->ledges[i].x + gameState->ledges[i].w;
+        ledgeVertice3.y = gameState->ledges[i].y + gameState->ledges[i].h;
+        InsertVector2DVector(&ledgeVertices, &ledgeVertice3);
+        ledgeVertice4.x = gameState->ledges[i].x;
+        ledgeVertice4.y = gameState->ledges[i].y + gameState->ledges[i].h;
+        InsertVector2DVector(&ledgeVertices, &ledgeVertice4);
+        CheckCollision(&playerVertices, &ledgeVertices);
+    }
+
+    //Player and ledges collision.
+    /*for (int i = 0; i < ArrayLength(gameState->ledges); i++) {
         float mw = gameState->man.w, mh = gameState->man.h;
         float mx = gameState->man.x, my = gameState->man.y;
         float bw = (float)gameState->ledges[i].w, bh = (float)gameState->ledges[i].h,
@@ -514,15 +555,15 @@ void CollisionDetection(GameState* gameState) {
                 }
             }
         }
+    }*/
 
-        //Prevent player to fall through the ground.
-        if (gameState->man.y > 300) {
-            gameState->man.dy = 0.f;
-            gameState->man.y = 300;
-            if (gameState->man.onLedge == false) {
-                Mix_PlayChannel(-1, gameState->landMixChunk, 0);
-                gameState->man.onLedge = true;
-            }
+    //Prevent player to fall through the ground.
+    if (gameState->man.y > 300) {
+        gameState->man.dy = 0.f;
+        gameState->man.y = 300;
+        if (gameState->man.onLedge == false) {
+            Mix_PlayChannel(-1, gameState->landMixChunk, 0);
+            gameState->man.onLedge = true;
         }
     }
 }
