@@ -35,13 +35,40 @@ bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondO
 		edge.y = secondObjectVertices->array[i + 1]->y - secondObjectVertices->array[i]->y;
 		AddVector2DToGame(secondObjectVectors, edge.x, edge.y);
 	}
-	Vector2DVector* axis = malloc(sizeof(Vector2DVector));
-	InitVector2DVector(axis, 8);
-	GetAxis(axis, firstObjectVectors);
-	GetAxis(axis, secondObjectVectors);
+	Vector2DVector* axis1 = malloc(sizeof(Vector2DVector));
+	InitVector2DVector(axis1, 8);
+	GetAxis(axis1, firstObjectVectors);
+	//Projecting shapes onto the axis using dot product and storing minimum and maximum.
+	for (int i = 0; i < axis1->used; i++) {
+		Vector2D projection1;
+		float min = DotProduct(axis1->array[i], firstObjectVectors->array[0]);
+		float max = min;
+		for (int j = 1; j < firstObjectVectors->used; j++) {
+			float dotProduct = DotProduct(axis1->array[i], firstObjectVectors->array[j]);
+			if (dotProduct < min)
+				min = dotProduct;
+			else if (dotProduct > max)
+				max = dotProduct;
+		}
+		projection1.x = min;
+		projection1.y = max;
+		Vector2D projection2;
+		float min = DotProduct(axis1->array[i], secondObjectVectors->array[0]);
+		float max = min;
+		for (int j = 1; j < secondObjectVectors->used; j++) {
+			float dotProduct = DotProduct(axis1->array[i], secondObjectVectors->array[j]);
+			if (dotProduct < min)
+				min = dotProduct;
+			else if (dotProduct > max)
+				max = dotProduct;
+		}
+		projection2.x = min;
+		projection2.y = max;
+	}
+	GetAxis(axis1, secondObjectVectors);
 	FreeVector2DVector(firstObjectVectors);
 	FreeVector2DVector(secondObjectVectors);
-	FreeVector2DVector(axis);
+	FreeVector2DVector(axis1);
 	return true;
 }
 

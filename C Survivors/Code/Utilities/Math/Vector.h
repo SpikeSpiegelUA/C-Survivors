@@ -17,3 +17,5 @@ void RemoveVector2DVector(Vector2DVector* vector2DVector, Vector2D* element);
 void FreeVector2DVector(Vector2DVector* vector2DVector);
 bool AddVector2DToGame(Vector2DVector* vector2DVector, float x, float y);
 void RemoveVector2DFromGame(Vector2DVector* vector2DVector, int index);
+
+float DotProduct(Vector2D* firstVector, Vector2D* secondVector);

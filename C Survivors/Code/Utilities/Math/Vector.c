@@ -81,3 +81,8 @@ void RemoveVector2DFromGame(Vector2DVector* vector2DVector, int index)
 		RemoveVector2DVector(vector2DVector, vector2DVector->array[index]);
 }
 
+float DotProduct(Vector2D* firstVector, Vector2D* secondVector)
+{
+	return firstVector->x * secondVector->x + firstVector->y * secondVector->y;
+}
+
