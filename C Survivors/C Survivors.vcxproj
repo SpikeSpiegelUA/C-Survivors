@@ -147,6 +147,8 @@
     <ClCompile Include="Code\Entities\Star.c" />
     <ClCompile Include="Code\Managers\GameState.c" />
     <ClCompile Include="Code\CSurvivors.c" />
+    <ClCompile Include="Code\Utilities\Math\Math.cpp" />
+    <ClCompile Include="Code\Utilities\Math\Projection.cpp" />
     <ClCompile Include="Code\Utilities\Math\Vector.c" />
     <ClCompile Include="Code\Utilities\SATCollision.c" />
     <ClInclude Include="Code\CSurvivors.h" />
@@ -163,6 +165,8 @@
     <ClCompile Include="Code\Entities\Bullet.c" />
     <ClCompile Include="Code\UI\Status.c" />
     <ClInclude Include="Code\UI\Status.h" />
+    <ClInclude Include="Code\Utilities\Math\Math.h" />
+    <ClInclude Include="Code\Utilities\Math\Projection.h" />
     <ClInclude Include="Code\Utilities\SATCollision.h" />
     <ClInclude Include="Code\Utilities\Math\Vector.h" />
   </ItemGroup>

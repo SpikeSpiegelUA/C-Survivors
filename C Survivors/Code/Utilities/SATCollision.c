@@ -1,10 +1,13 @@
 #include "SATCollision.h"
 #include "SDL.h"
+#include "Math/Projection.h"
 
 void GetAxis(Vector2DVector* axisVector, Vector2DVector* objectVectors);
 
 bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondObjectVertices)
 {
+	Vector2D* overlappingAxis = malloc(sizeof(Vector2D));
+	float overlap = 9999999;
 	Vector2DVector* firstObjectVectors = malloc(sizeof(Vector2DVector));
 	InitVector2DVector(firstObjectVectors, 8);
 	Vector2DVector* secondObjectVectors = malloc(sizeof(Vector2DVector));
@@ -40,7 +43,7 @@ bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondO
 	GetAxis(axis1, firstObjectVectors);
 	//Projecting shapes onto the axis using dot product and storing minimum and maximum.
 	for (int i = 0; i < axis1->used; i++) {
-		Vector2D projection1;
+		Projection projection1;
 		float min = DotProduct(axis1->array[i], firstObjectVectors->array[0]);
 		float max = min;
 		for (int j = 1; j < firstObjectVectors->used; j++) {
@@ -50,9 +53,9 @@ bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondO
 			else if (dotProduct > max)
 				max = dotProduct;
 		}
-		projection1.x = min;
-		projection1.y = max;
-		Vector2D projection2;
+		projection1.min = min;
+		projection1.max = max;
+		Projection projection2;
 		float min = DotProduct(axis1->array[i], secondObjectVectors->array[0]);
 		float max = min;
 		for (int j = 1; j < secondObjectVectors->used; j++) {
@@ -62,13 +65,48 @@ bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondO
 			else if (dotProduct > max)
 				max = dotProduct;
 		}
-		projection2.x = min;
-		projection2.y = max;
+		projection2.min = min;
+		projection2.max = max;
+		if (!ProjectionOverlap(&projection1, &projection2))
+			return false;
+		else {
+			float overlap = GetOverlap(&projection1, &projection2);
+		}
 	}
-	GetAxis(axis1, secondObjectVectors);
+	Vector2DVector* axis2 = malloc(sizeof(Vector2DVector));
+	GetAxis(axis2, secondObjectVectors);
+	for (int i = 0; i < axis2->used; i++) {
+		Projection projection1;
+		float min = DotProduct(axis2->array[i], firstObjectVectors->array[0]);
+		float max = min;
+		for (int j = 1; j < firstObjectVectors->used; j++) {
+			float dotProduct = DotProduct(axis2->array[i], firstObjectVectors->array[j]);
+			if (dotProduct < min)
+				min = dotProduct;
+			else if (dotProduct > max)
+				max = dotProduct;
+		}
+		projection1.min = min;
+		projection1.max = max;
+		Projection projection2;
+		float min = DotProduct(axis2->array[i], secondObjectVectors->array[0]);
+		float max = min;
+		for (int j = 1; j < secondObjectVectors->used; j++) {
+			float dotProduct = DotProduct(axis2->array[i], secondObjectVectors->array[j]);
+			if (dotProduct < min)
+				min = dotProduct;
+			else if (dotProduct > max)
+				max = dotProduct;
+		}
+		projection2.min = min;
+		projection2.max = max;
+		if (!ProjectionOverlap(&projection1, &projection2))
+			return false;
+	}
 	FreeVector2DVector(firstObjectVectors);
 	FreeVector2DVector(secondObjectVectors);
 	FreeVector2DVector(axis1);
+	FreeVector2DVector(axis2);
 	return true;
 }
 
@@ -83,7 +121,8 @@ void GetAxis(Vector2DVector* axisVector, Vector2DVector* objectVectors) {
 				found = true;
 				break;
 			}
+		
 		if (!found)
-			AddVector2DToGame(axisVector, ax.x, ax.y);
+			AddVector2DToGame(NormalizeVector(axisVector), ax.x, ax.y);
 	}
 }
