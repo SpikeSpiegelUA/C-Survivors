@@ -36,7 +36,7 @@
     <ClCompile Include="Code\Entities\Man.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Entities\Background.cpp">
+    <ClCompile Include="Code\Entities\Background.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Code\Entities\EnemyJarhead.c">
@@ -51,10 +51,10 @@
     <ClCompile Include="Code\Utilities\Math\Vector.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Utilities\Math\Projection.cpp">
+    <ClCompile Include="Code\Utilities\Math\Projection.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Utilities\Math\Math.cpp">
+    <ClCompile Include="Code\Utilities\Math\Math.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

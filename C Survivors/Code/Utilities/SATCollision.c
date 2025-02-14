@@ -1,13 +1,12 @@
 #include "SATCollision.h"
-#include "SDL.h"
-#include "Math/Projection.h"
+#include <stdlib.h>
 
 void GetAxis(Vector2DVector* axisVector, Vector2DVector* objectVectors);
 
 bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondObjectVertices)
 {
-	Vector2D* overlappingAxis = malloc(sizeof(Vector2D));
-	float overlap = 9999999;
+	Vector2D* overlappingAxis = NULL;
+	float smallestOverlap = 9999999;
 	Vector2DVector* firstObjectVectors = malloc(sizeof(Vector2DVector));
 	InitVector2DVector(firstObjectVectors, 8);
 	Vector2DVector* secondObjectVectors = malloc(sizeof(Vector2DVector));
@@ -56,8 +55,8 @@ bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondO
 		projection1.min = min;
 		projection1.max = max;
 		Projection projection2;
-		float min = DotProduct(axis1->array[i], secondObjectVectors->array[0]);
-		float max = min;
+		min = DotProduct(axis1->array[i], secondObjectVectors->array[0]);
+		max = min;
 		for (int j = 1; j < secondObjectVectors->used; j++) {
 			float dotProduct = DotProduct(axis1->array[i], secondObjectVectors->array[j]);
 			if (dotProduct < min)
@@ -71,6 +70,10 @@ bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondO
 			return false;
 		else {
 			float overlap = GetOverlap(&projection1, &projection2);
+			if (overlap < smallestOverlap) {
+				smallestOverlap = overlap;
+				overlappingAxis = axis1->array[i];
+			}
 		}
 	}
 	Vector2DVector* axis2 = malloc(sizeof(Vector2DVector));
@@ -89,8 +92,8 @@ bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondO
 		projection1.min = min;
 		projection1.max = max;
 		Projection projection2;
-		float min = DotProduct(axis2->array[i], secondObjectVectors->array[0]);
-		float max = min;
+		min = DotProduct(axis2->array[i], secondObjectVectors->array[0]);
+		max = min;
 		for (int j = 1; j < secondObjectVectors->used; j++) {
 			float dotProduct = DotProduct(axis2->array[i], secondObjectVectors->array[j]);
 			if (dotProduct < min)
@@ -102,6 +105,17 @@ bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondO
 		projection2.max = max;
 		if (!ProjectionOverlap(&projection1, &projection2))
 			return false;
+		else {
+			if (!ProjectionOverlap(&projection1, &projection2))
+				return false;
+			else {
+				float overlap = GetOverlap(&projection1, &projection2);
+				if (overlap < smallestOverlap) {
+					smallestOverlap = overlap;
+					overlappingAxis = axis1->array[i];
+				}
+			}
+		}
 	}
 	FreeVector2DVector(firstObjectVectors);
 	FreeVector2DVector(secondObjectVectors);
@@ -116,6 +130,7 @@ void GetAxis(Vector2DVector* axisVector, Vector2DVector* objectVectors) {
 		Vector2D ax;
 		ax.x = -objectVectors->array[i]->y;
 		ax.y = objectVectors->array[i]->x;
+		NormalizeVector(&ax);
 		for (int j = 0; j < axisVector->used; j++)
 			if (fabsf(axisVector->array[j]->x) == fabsf(ax.x) && fabsf(axisVector->array[j]->y) == fabsf(ax.y)) {
 				found = true;
@@ -123,6 +138,6 @@ void GetAxis(Vector2DVector* axisVector, Vector2DVector* objectVectors) {
 			}
 		
 		if (!found)
-			AddVector2DToGame(NormalizeVector(axisVector), ax.x, ax.y);
+			AddVector2DToGame(axisVector, ax.x, ax.y);
 	}
 }

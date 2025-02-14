@@ -119,6 +119,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>sdl2.lib;legacy_stdio_definitions.lib;sdl2main.lib;sdl2_image.lib;SDL2_ttf.lib;SDL2_mixer.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -139,7 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Code\Entities\Background.cpp" />
+    <ClCompile Include="Code\Entities\Background.c" />
     <ClCompile Include="Code\Entities\EnemyJarhead.c" />
     <ClCompile Include="Code\Entities\Ledge.c" />
     <ClCompile Include="Code\Entities\Man.c" />
@@ -147,8 +148,8 @@
     <ClCompile Include="Code\Entities\Star.c" />
     <ClCompile Include="Code\Managers\GameState.c" />
     <ClCompile Include="Code\CSurvivors.c" />
-    <ClCompile Include="Code\Utilities\Math\Math.cpp" />
-    <ClCompile Include="Code\Utilities\Math\Projection.cpp" />
+    <ClCompile Include="Code\Utilities\Math\Math.c" />
+    <ClCompile Include="Code\Utilities\Math\Projection.c" />
     <ClCompile Include="Code\Utilities\Math\Vector.c" />
     <ClCompile Include="Code\Utilities\SATCollision.c" />
     <ClInclude Include="Code\CSurvivors.h" />
