@@ -38,7 +38,7 @@ bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondO
 		AddVector2DToGame(secondObjectVectors, edge.x, edge.y);
 	}
 	Vector2DVector* axis1 = malloc(sizeof(Vector2DVector));
-	InitVector2DVector(axis1, 8);
+	InitVector2DVector(axis1, 4);
 	GetAxis(axis1, firstObjectVectors);
 	//Projecting shapes onto the axis using dot product and storing minimum and maximum.
 	for (int i = 0; i < axis1->used; i++) {
@@ -77,6 +77,7 @@ bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondO
 		}
 	}
 	Vector2DVector* axis2 = malloc(sizeof(Vector2DVector));
+	InitVector2DVector(axis2, 4);
 	GetAxis(axis2, secondObjectVectors);
 	for (int i = 0; i < axis2->used; i++) {
 		Projection projection1;
@@ -112,7 +113,7 @@ bool CheckCollision(Vector2DVector* firstObjectVertices, Vector2DVector* secondO
 				float overlap = GetOverlap(&projection1, &projection2);
 				if (overlap < smallestOverlap) {
 					smallestOverlap = overlap;
-					overlappingAxis = axis1->array[i];
+					overlappingAxis = axis2->array[i];
 				}
 			}
 		}

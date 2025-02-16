@@ -461,46 +461,48 @@ void CollisionDetection(GameState* gameState) {
             }
         }
 
-    Vector2DVector playerVertices;
-    Vector2DVector ledgeVertices;
-    InitVector2DVector(&playerVertices, 4);
-    InitVector2DVector(&ledgeVertices, 4);
-    Vector2D playerVertice1;
-    Vector2D playerVertice2;
-    Vector2D playerVertice3;
-    Vector2D playerVertice4;
-    playerVertice1.x = gameState->man.x;
-    playerVertice1.y = gameState->man.y;
-    InsertVector2DVector(&playerVertices, &playerVertice1);
-    playerVertice2.x = gameState->man.x + gameState->man.w;
-    playerVertice2.y = gameState->man.y;
-    InsertVector2DVector(&playerVertices, &playerVertice2);
-    playerVertice3.x = gameState->man.x + gameState->man.w;
-    playerVertice3.y = gameState->man.y + gameState->man.h;
-    InsertVector2DVector(&playerVertices, &playerVertice3);
-    playerVertice4.x = gameState->man.x;
-    playerVertice4.y = gameState->man.y + gameState->man.h;
-    InsertVector2DVector(&playerVertices, &playerVertice4);
-    for (int i = 0; i < ArrayLength(gameState->ledges); i++) {
-        Vector2D ledgeVertice1;
-        Vector2D ledgeVertice2;
-        Vector2D ledgeVertice3;
-        Vector2D ledgeVertice4;
-        ledgeVertice1.x = gameState->ledges[i].x;
-        ledgeVertice1.y = gameState->ledges[i].y;
-        InsertVector2DVector(&ledgeVertices, &ledgeVertice1);
-        ledgeVertice2.x = gameState->ledges[i].x + gameState->ledges[i].w;
-        ledgeVertice2.y = gameState->ledges[i].y;
-        InsertVector2DVector(&ledgeVertices, &ledgeVertice2);
-        ledgeVertice3.x = gameState->ledges[i].x + gameState->ledges[i].w;
-        ledgeVertice3.y = gameState->ledges[i].y + gameState->ledges[i].h;
-        InsertVector2DVector(&ledgeVertices, &ledgeVertice3);
-        ledgeVertice4.x = gameState->ledges[i].x;
-        ledgeVertice4.y = gameState->ledges[i].y + gameState->ledges[i].h;
-        InsertVector2DVector(&ledgeVertices, &ledgeVertice4);
-        CheckCollision(&playerVertices, &ledgeVertices);
+    Vector2DVector* playerVertices = malloc(sizeof(Vector2DVector));
+    Vector2DVector* ledgeVertices = malloc(sizeof(Vector2DVector));
+    InitVector2DVector(playerVertices, 4);
+    InitVector2DVector(ledgeVertices, 4);
+    Vector2D* playerVertice1 = malloc(sizeof(Vector2D));
+    Vector2D* playerVertice2 = malloc(sizeof(Vector2D));
+    Vector2D* playerVertice3 = malloc(sizeof(Vector2D));
+    Vector2D* playerVertice4 = malloc(sizeof(Vector2D));
+    playerVertice1->x = gameState->man.x;
+    playerVertice1->y = gameState->man.y;
+    InsertVector2DVector(playerVertices, playerVertice1);
+    playerVertice2->x = gameState->man.x + gameState->man.w;
+    playerVertice2->y = gameState->man.y;
+    InsertVector2DVector(playerVertices, playerVertice2);
+    playerVertice3->x = gameState->man.x + gameState->man.w;
+    playerVertice3->y = gameState->man.y + gameState->man.h;
+    InsertVector2DVector(playerVertices, playerVertice3);
+    playerVertice4->x = gameState->man.x;
+    playerVertice4->y = gameState->man.y + gameState->man.h;
+    InsertVector2DVector(playerVertices, playerVertice4);
+    for (int i = 0; i < 1; i++) {
+        Vector2D* ledgeVertice1 = malloc(sizeof(Vector2D));
+        Vector2D* ledgeVertice2 = malloc(sizeof(Vector2D));
+        Vector2D* ledgeVertice3 = malloc(sizeof(Vector2D));
+        Vector2D* ledgeVertice4 = malloc(sizeof(Vector2D));
+        ledgeVertice1->x = gameState->ledges[i].x;
+        ledgeVertice1->y = gameState->ledges[i].y;
+        InsertVector2DVector(ledgeVertices, ledgeVertice1);
+        ledgeVertice2->x = gameState->ledges[i].x + gameState->ledges[i].w;
+        ledgeVertice2->y = gameState->ledges[i].y;
+        InsertVector2DVector(ledgeVertices, ledgeVertice2);
+        ledgeVertice3->x = gameState->ledges[i].x + gameState->ledges[i].w;
+        ledgeVertice3->y = gameState->ledges[i].y + gameState->ledges[i].h;
+        InsertVector2DVector(ledgeVertices, ledgeVertice3);
+        ledgeVertice4->x = gameState->ledges[i].x;
+        ledgeVertice4->y = gameState->ledges[i].y + gameState->ledges[i].h;
+        InsertVector2DVector(ledgeVertices, ledgeVertice4);
+        if (CheckCollision(playerVertices, ledgeVertices))
+            printf("true!!!");
     }
-
+    FreeVector2DVector(playerVertices);
+    FreeVector2DVector(ledgeVertices);
     //Player and ledges collision.
     /*for (int i = 0; i < ArrayLength(gameState->ledges); i++) {
         float mw = gameState->man.w, mh = gameState->man.h;
